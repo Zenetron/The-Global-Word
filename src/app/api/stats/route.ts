@@ -143,7 +143,7 @@ export async function GET(req: Request) {
     const wordDistribution: Record<string, Record<string, number>> = {};
     const countryTopWord: Record<string, { text: string, count: number, firstSeen: string, color: string, lat: number, lng: number }> = {};
 
-    votes.forEach(v => {
+    votes?.forEach((v: any) => {
       const normalizedWord = v.word.charAt(0).toUpperCase() + v.word.slice(1).toLowerCase();
       const color = getRandomNeonColor();
       const country = normalizeCountryName(v.country);
@@ -185,7 +185,7 @@ export async function GET(req: Request) {
       country
     }));
 
-    const recentVotes = votes.slice(0, 10).map(v => ({
+    const recentVotes = votes?.slice(0, 10).map((v: any) => ({
       id: v.id,
       text: v.word.charAt(0).toUpperCase() + v.word.slice(1).toLowerCase(),
       country: v.country,
