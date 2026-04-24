@@ -7,9 +7,12 @@ import SidebarStats from '@/components/SidebarStats';
 import ActivityFeed from '@/components/ActivityFeed';
 import { COUNTRIES, CONTINENTS } from '@/lib/countries';
 
+import { useI18n } from '@/hooks/useI18n';
+
 const GlobeComponentDynamic = dynamic(() => import('@/components/GlobeComponent'), { ssr: false });
 
 export default function Home() {
+  const { t } = useI18n();
   const [globeData, setGlobeData] = useState<any[]>([]);
   const [topWords, setTopWords] = useState<any[]>([]);
   const [recentVotes, setRecentVotes] = useState<any[]>([]);
@@ -25,7 +28,7 @@ export default function Home() {
       if (data.topWords) setTopWords(data.topWords);
       if (data.recentVotes) setRecentVotes(data.recentVotes);
     } catch (e) {
-      console.error('Erreur lors du chargement des stats', e);
+      console.error(t('error'), e);
     }
   };
 
@@ -100,7 +103,7 @@ export default function Home() {
       if (localWords.length > 0) {
         setSelectedWord({ word: localWords[0].text, country: continentGeo.name });
       } else {
-        setSelectedWord({ word: "Aucun mot pour le moment", country: continentGeo.name });
+        setSelectedWord({ word: t('noWordYet'), country: continentGeo.name });
       }
       return;
     }
@@ -113,7 +116,7 @@ export default function Home() {
       if (localWords.length > 0) {
         setSelectedWord({ word: localWords[0].text, country: localWords[0].country });
       } else {
-        setSelectedWord({ word: "Aucun mot pour le moment", country: countryGeo.name });
+        setSelectedWord({ word: t('noWordYet'), country: countryGeo.name });
       }
       return;
     }
@@ -124,7 +127,7 @@ export default function Home() {
       setFocusCoords({ lat: foundWord.lat, lng: foundWord.lng });
       setSelectedWord({ word: foundWord.text, country: foundWord.country });
     } else {
-      alert(`Zone introuvable : ${countryName}`);
+      alert(`${t('zoneNotFound')} : ${countryName}`);
     }
   };
 
@@ -152,7 +155,7 @@ export default function Home() {
         <div className="fixed top-8 left-8 z-20 bg-black/40 backdrop-blur-md border border-white/10 px-6 py-4 rounded-2xl flex flex-col pointer-events-none shadow-2xl">
           <span className="text-[10px] text-white/50 uppercase tracking-widest mb-1 flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
-            Tendance du Jour
+            {t('dailyTrend')}
           </span>
           <div className="flex items-baseline gap-3">
             <span 

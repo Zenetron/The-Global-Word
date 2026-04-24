@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { MapPin, MessageSquare } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
+import { useI18n } from '@/hooks/useI18n';
+
 interface ActivityItem {
   id: string;
   word: string;
@@ -16,13 +18,14 @@ interface ActivityFeedProps {
 }
 
 export default function ActivityFeed({ recentVotes }: ActivityFeedProps) {
+  const { t } = useI18n();
   // On prend simplement les 3 derniers votes réels
   const activities = recentVotes.slice(0, 3);
 
   return (
     <div className="fixed bottom-8 left-8 z-20 flex flex-col gap-2 max-w-[250px] pointer-events-none hidden md:flex">
       <h4 className="text-[10px] text-white/30 uppercase tracking-[0.2em] font-bold mb-1 flex items-center gap-2 px-2">
-        <div className="w-1.5 h-1.5 rounded-full bg-neon-cyan animate-pulse" /> Activité Mondiale
+        <div className="w-1.5 h-1.5 rounded-full bg-neon-cyan animate-pulse" /> {t('recentActivity')}
       </h4>
       <div className="flex flex-col gap-2">
         <AnimatePresence mode="popLayout" initial={false}>

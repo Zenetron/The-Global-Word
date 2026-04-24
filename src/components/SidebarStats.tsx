@@ -14,7 +14,19 @@ interface SidebarStatsProps {
 type Period = 'today' | 'month' | 'year';
 type Zone = 'world' | 'continent' | 'country';
 
+import { useI18n } from '@/hooks/useI18n';
+
+interface SidebarStatsProps {
+  globeData: any[];
+  topWords: { word: string; count: number; color: string; distribution?: Record<string, number> }[];
+  onSearchCountry?: (country: string) => void;
+}
+
+type Period = 'today' | 'month' | 'year';
+type Zone = 'world' | 'continent' | 'country';
+
 export default function SidebarStats({ globeData, topWords, onSearchCountry }: SidebarStatsProps) {
+  const { t } = useI18n();
   const [period, setPeriod] = useState<Period>('today');
   const [zone, setZone] = useState<Zone>('world');
   const [search, setSearch] = useState('');
@@ -155,8 +167,8 @@ export default function SidebarStats({ globeData, topWords, onSearchCountry }: S
     : (selectedSubZone ? getTopTenForZone(selectedSubZone) : (zone === 'world' ? topWords : []));
 
   const topTitle = selectedWordFilter 
-    ? `Pays - "${selectedWordFilter}"`
-    : (selectedSubZone ? `Top 10 - ${selectedSubZone}` : (zone === 'world' ? 'Top 10 - Monde' : 'Tendances'));
+    ? `${t('country')} - "${selectedWordFilter}"`
+    : (selectedSubZone ? `Top 10 - ${selectedSubZone}` : (zone === 'world' ? t('topTenWorld') : t('trends')));
 
   return (
     <>
@@ -186,7 +198,7 @@ export default function SidebarStats({ globeData, topWords, onSearchCountry }: S
         <form onSubmit={handleSearch} className="relative">
           <input 
             type="text" 
-            placeholder="Rechercher un pays..." 
+            placeholder={t('searchCountry')} 
             value={search}
             onChange={handleSearchChange}
             className="w-full bg-white/5 border border-white/10 rounded-md py-2 pl-3 pr-10 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-neon-cyan transition-colors"
@@ -219,7 +231,7 @@ export default function SidebarStats({ globeData, topWords, onSearchCountry }: S
             zone === 'world' ? 'bg-white/20 text-white shadow-sm' : 'text-white/50 hover:text-white'
           }`}
         >
-          <Globe size={14} /> Monde
+          <Globe size={14} /> {t('world')}
         </button>
         <button
           onClick={() => handleZoneChange('continent')}
@@ -227,7 +239,7 @@ export default function SidebarStats({ globeData, topWords, onSearchCountry }: S
             zone === 'continent' ? 'bg-white/20 text-white shadow-sm' : 'text-white/50 hover:text-white'
           }`}
         >
-          <Map size={14} /> Cont.
+          <Map size={14} /> {t('continent')}
         </button>
         <button
           onClick={() => handleZoneChange('country')}
@@ -235,7 +247,7 @@ export default function SidebarStats({ globeData, topWords, onSearchCountry }: S
             zone === 'country' ? 'bg-white/20 text-white shadow-sm' : 'text-white/50 hover:text-white'
           }`}
         >
-          <MapPin size={14} /> Pays
+          <MapPin size={14} /> {t('country')}
         </button>
       </div>
 
@@ -244,7 +256,7 @@ export default function SidebarStats({ globeData, topWords, onSearchCountry }: S
         <div className="mb-6 animate-in fade-in slide-in-from-top-2 duration-300">
           <div className="flex items-center justify-between mb-2">
             <span className="text-[10px] text-white/40 uppercase tracking-widest font-bold">
-              Sélectionner {zone === 'continent' ? 'un continent' : 'un pays'}
+              {t('selectZone')} {zone === 'continent' ? t('selectContinent') : t('selectCountry')}
             </span>
             <button 
               onClick={() => setIsExpanded(!isExpanded)}
@@ -294,7 +306,7 @@ export default function SidebarStats({ globeData, topWords, onSearchCountry }: S
             )}
             {zone === 'country' && COUNTRIES.length > 20 && (
               <div className="col-span-2 text-[9px] text-white/20 text-center mt-1">
-                Utilisez la recherche pour plus de pays
+                {t('useSearchMore')}
               </div>
             )}
           </div>
@@ -311,7 +323,7 @@ export default function SidebarStats({ globeData, topWords, onSearchCountry }: S
               period === p ? 'border-neon-cyan text-white' : 'border-transparent text-white/40 hover:text-white/70'
             }`}
           >
-            {p === 'today' ? "Aujourd'hui" : p === 'month' ? 'Ce Mois' : 'Cette Année'}
+            {p === 'today' ? t('today') : p === 'month' ? t('thisMonth') : t('thisYear')}
           </button>
         ))}
       </div>
@@ -325,7 +337,7 @@ export default function SidebarStats({ globeData, topWords, onSearchCountry }: S
             onClick={() => { setSelectedSubZone(null); setSelectedWordFilter(null); }}
             className="text-[10px] text-neon-cyan hover:underline"
           >
-            Retour
+            {t('back')}
           </button>
         )}
       </div>
@@ -333,7 +345,7 @@ export default function SidebarStats({ globeData, topWords, onSearchCountry }: S
       <div className="flex flex-col gap-3 flex-1">
         {displayWords.length === 0 ? (
           <div className="text-white/30 text-center text-sm py-10 italic">
-            {zone === 'world' ? 'Aucune donnée' : (selectedSubZone ? 'Aucun mot pour cette zone' : 'Choisissez une zone ci-dessus')}
+            {zone === 'world' ? t('noData') : (selectedSubZone ? t('noWordZone') : t('chooseZone'))}
           </div>
         ) : (
           displayWords.map((item: any, index) => (
@@ -365,7 +377,7 @@ export default function SidebarStats({ globeData, topWords, onSearchCountry }: S
       
       <div className="mt-8 text-center text-[10px] text-white/20 pb-4">
         The Global Word © 2026<br/>
-        Visualisation globale des émotions
+        {t('globalVision')}
       </div>
       </motion.div>
     </>
