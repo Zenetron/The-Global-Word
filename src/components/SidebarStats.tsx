@@ -17,7 +17,7 @@ type Zone = 'world' | 'continent' | 'country';
 import { useI18n } from '@/hooks/useI18n';
 
 export default function SidebarStats({ globeData, topWords, onSearchCountry }: SidebarStatsProps) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [period, setPeriod] = useState<Period>('today');
   const [zone, setZone] = useState<Zone>('world');
   const [search, setSearch] = useState('');
@@ -32,9 +32,12 @@ export default function SidebarStats({ globeData, topWords, onSearchCountry }: S
     setSearch(val);
     if (val.trim().length > 0) {
       const filtered = COUNTRIES
-        .filter(c => c.name.toLowerCase().includes(val.toLowerCase()))
+        .filter(c => 
+          c.name.toLowerCase().includes(val.toLowerCase()) || 
+          c.nameEn.toLowerCase().includes(val.toLowerCase())
+        )
         .slice(0, 5)
-        .map(c => c.name);
+        .map(c => locale === 'fr' ? c.name : c.nameEn);
       setSuggestions(filtered);
     } else {
       setSuggestions([]);
@@ -43,23 +46,30 @@ export default function SidebarStats({ globeData, topWords, onSearchCountry }: S
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    const foundCountry = COUNTRIES.find(c => c.name.toLowerCase() === search.trim().toLowerCase());
+    const foundCountry = COUNTRIES.find(c => 
+      c.name.toLowerCase() === search.trim().toLowerCase() || 
+      c.nameEn.toLowerCase() === search.trim().toLowerCase()
+    );
     if (foundCountry && onSearchCountry) {
       onSearchCountry(foundCountry.name);
       setSelectedSubZone(foundCountry.name);
       setZone('country');
       setSuggestions([]);
+      setSearch(locale === 'fr' ? foundCountry.name : foundCountry.nameEn);
     }
   };
 
   const handleSuggestionClick = (countryName: string) => {
+    const country = COUNTRIES.find(c => c.name === countryName || c.nameEn === countryName);
+    const realName = country ? country.name : countryName;
+    
     setSearch(countryName);
     setSuggestions([]);
-    setSelectedSubZone(countryName);
+    setSelectedSubZone(realName);
     setZone('country');
-    setSelectedWordFilter(null); // Reset word filter when zooming to country
+    setSelectedWordFilter(null);
     if (onSearchCountry) {
-      onSearchCountry(countryName);
+      onSearchCountry(realName);
     }
   };
 
@@ -257,6 +267,7 @@ export default function SidebarStats({ globeData, topWords, onSearchCountry }: S
             <div className={`grid grid-cols-2 gap-2 overflow-hidden transition-all duration-300 ${isExpanded ? 'max-h-60 overflow-y-auto' : 'max-h-24'}`}>
               {zone === 'continent' ? (
                 CONTINENTS.map((c) => {
+                  const displayName = locale === 'fr' ? c.name : c.nameEn;
                   const top = getTopWordForZone(c.name);
                   return (
                     <button
@@ -264,7 +275,7 @@ export default function SidebarStats({ globeData, topWords, onSearchCountry }: S
                       onClick={() => handleSuggestionClick(c.name)}
                       className="bg-white/5 hover:bg-white/10 border border-white/5 py-1.5 px-2 rounded text-[10px] text-white/70 hover:text-white text-left transition-all flex flex-col gap-0.5"
                     >
-                      <span className="font-bold truncate">{c.name}</span>
+                      <span className="font-bold truncate">{displayName}</span>
                       {top && (
                         <span className="text-[9px] font-medium" style={{ color: top.color }}>
                           {top.word}
@@ -275,6 +286,7 @@ export default function SidebarStats({ globeData, topWords, onSearchCountry }: S
                 })
               ) : (
                 sortedCountries.slice(0, 20).map((c) => {
+                  const displayName = locale === 'fr' ? c.name : c.nameEn;
                   const top = getTopWordForZone(c.name);
                   return (
                     <button
@@ -282,7 +294,7 @@ export default function SidebarStats({ globeData, topWords, onSearchCountry }: S
                       onClick={() => handleSuggestionClick(c.name)}
                       className="bg-white/5 hover:bg-white/10 border border-white/5 py-1.5 px-2 rounded text-[10px] text-white/70 hover:text-white text-left transition-all flex flex-col gap-0.5"
                     >
-                      <span className="font-bold truncate">{c.name}</span>
+                      <span className="font-bold truncate">{displayName}</span>
                       {top && (
                         <span className="text-[9px] font-medium" style={{ color: top.color }}>
                           {top.word}

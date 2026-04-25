@@ -12,7 +12,7 @@ import { useI18n } from '@/hooks/useI18n';
 const GlobeComponentDynamic = dynamic(() => import('@/components/GlobeComponent'), { ssr: false });
 
 export default function Home() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [globeData, setGlobeData] = useState<any[]>([]);
   const [topWords, setTopWords] = useState<any[]>([]);
   const [recentVotes, setRecentVotes] = useState<any[]>([]);
@@ -143,60 +143,68 @@ export default function Home() {
     }
   };
 
-  return (
-    <main className="relative w-full h-screen bg-black overflow-hidden">
-      {/* Globe en arrière-plan */}
-      <GlobeComponentDynamic 
-        data={globeData} 
-        ringsData={ringsData}
-        focusCoords={focusCoords} 
-        onWordClick={handleWordClick} 
-      />
+    const getDisplayCountry = (name: string) => {
+      const country = COUNTRIES.find(c => c.name === name);
+      if (country) return locale === 'fr' ? country.name : country.nameEn;
+      const continent = CONTINENTS.find(c => c.name === name);
+      if (continent) return locale === 'fr' ? continent.name : continent.nameEn;
+      return name;
+    };
 
-      <ActivityFeed recentVotes={recentVotes} />
-      
-      {/* Mot #1 du jour (Haut Gauche) */}
-      {topWords.length > 0 && (
-        <div className="fixed top-8 left-8 z-20 bg-black/40 backdrop-blur-md border border-white/10 px-6 py-4 rounded-2xl flex flex-col pointer-events-none shadow-2xl">
-          <span className="text-[10px] text-white/50 uppercase tracking-widest mb-1 flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
-            {t('dailyTrend')}
-          </span>
-          <div className="flex items-baseline gap-3">
-            <span 
-              className="text-5xl font-black tracking-wider uppercase"
-              style={{ color: topWords[0].color, textShadow: `0 0 20px ${topWords[0].color}` }}
-            >
-              {topWords[0].word}
+    return (
+      <main className="relative w-full h-screen bg-black overflow-hidden">
+        {/* Globe en arrière-plan */}
+        <GlobeComponentDynamic 
+          data={globeData} 
+          ringsData={ringsData}
+          focusCoords={focusCoords} 
+          onWordClick={handleWordClick} 
+        />
+
+        <ActivityFeed recentVotes={recentVotes} />
+        
+        {/* Mot #1 du jour (Haut Gauche) */}
+        {topWords.length > 0 && (
+          <div className="fixed top-8 left-8 z-20 bg-black/40 backdrop-blur-md border border-white/10 px-6 py-4 rounded-2xl flex flex-col pointer-events-none shadow-2xl">
+            <span className="text-[10px] text-white/50 uppercase tracking-widest mb-1 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+              {t('dailyTrend')}
             </span>
-            <span className="text-sm text-white/70 font-mono">x{topWords[0].count}</span>
-          </div>
-        </div>
-      )}
-
-      <SubmissionForm onSubmit={handleSubmission} />
-      <SidebarStats globeData={globeData} topWords={topWords} onSearchCountry={handleSearchCountry} />
-
-      {/* Affichage du mot sélectionné */}
-      {selectedWord && (
-        <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50 pointer-events-none">
-          <div className="bg-black/80 backdrop-blur-md border border-white/20 px-8 py-4 rounded-full shadow-[0_0_30px_rgba(0,255,255,0.2)] flex items-center gap-4 pointer-events-auto relative">
-            <button 
-              onClick={() => {
-                setSelectedWord(null);
-                setFocusCoords(null);
-              }}
-              className="absolute -top-3 -right-3 bg-white/10 hover:bg-white/20 text-white rounded-full w-8 h-8 flex items-center justify-center border border-white/20 transition-colors text-xs"
-            >
-              ✕
-            </button>
-            <div className="flex flex-col items-center">
-              <span className="text-sm text-gray-400 tracking-widest uppercase mb-1">{selectedWord.country}</span>
-              <span className="text-2xl font-bold text-white tracking-wide">"{selectedWord.word}"</span>
+            <div className="flex items-baseline gap-3">
+              <span 
+                className="text-5xl font-black tracking-wider uppercase"
+                style={{ color: topWords[0].color, textShadow: `0 0 20px ${topWords[0].color}` }}
+              >
+                {topWords[0].word}
+              </span>
+              <span className="text-sm text-white/70 font-mono">x{topWords[0].count}</span>
             </div>
           </div>
-        </div>
-      )}
-    </main>
-  );
-}
+        )}
+
+        <SubmissionForm onSubmit={handleSubmission} />
+        <SidebarStats globeData={globeData} topWords={topWords} onSearchCountry={handleSearchCountry} />
+
+        {/* Affichage du mot sélectionné */}
+        {selectedWord && (
+          <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50 pointer-events-none">
+            <div className="bg-black/80 backdrop-blur-md border border-white/20 px-8 py-4 rounded-full shadow-[0_0_30px_rgba(0,255,255,0.2)] flex items-center gap-4 pointer-events-auto relative">
+              <button 
+                onClick={() => {
+                  setSelectedWord(null);
+                  setFocusCoords(null);
+                }}
+                className="absolute -top-3 -right-3 bg-white/10 hover:bg-white/20 text-white rounded-full w-8 h-8 flex items-center justify-center border border-white/20 transition-colors text-xs"
+              >
+                ✕
+              </button>
+              <div className="flex flex-col items-center">
+                <span className="text-sm text-gray-400 tracking-widest uppercase mb-1">{getDisplayCountry(selectedWord.country)}</span>
+                <span className="text-2xl font-bold text-white tracking-wide">"{selectedWord.word}"</span>
+              </div>
+            </div>
+          </div>
+        )}
+      </main>
+    );
+  }
