@@ -6,7 +6,8 @@ import { normalizeCountryName } from '@/lib/countries';
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
-  const since = searchParams.get('since'); // Timestamp ISO du minuit local de l'utilisateur
+  const since = searchParams.get('since');
+  const lang = req.headers.get('accept-language')?.split(',')[0].split('-')[0] || 'en'; // Détection de la langue du visiteur
 
   if (!isSupabaseConfigured()) {
     // Mode Mock dynamique (déjà géré par le fallback existant)
@@ -120,10 +121,28 @@ export async function GET(req: Request) {
         created_at: v.created_at
       }));
 
+    // 4. Traduire le Top 10 dans la langue de l'utilisateur pour l'affichage
+    const translatedTopWords = await Promise.all(
+      mockTopWords.slice(0, 10).map(async (item) => {
+        if (lang === 'en') return item; // Déjà en anglais (notre pivot)
+        
+        try {
+          const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=${lang}&dt=t&q=${encodeURIComponent(item.word)}`);
+          if (res.ok) {
+            const data = await res.json();
+            return { ...item, word: data[0][0][0] };
+          }
+        } catch (e) {
+          console.error('Erreur traduction retour:', e);
+        }
+        return item;
+      })
+    );
+
     return NextResponse.json({
       globeData,
-      topWords: mockTopWords,
-      recentVotes
+      topWords: translatedTopWords,
+      recentVotes: recentVotes.slice(0, 50)
     });
   }
 
@@ -201,7 +220,44 @@ export async function GET(req: Request) {
       created_at: v.created_at
     }));
 
-    return NextResponse.json({ globeData, topWords, recentVotes });
+    // 4. Traduire le Top 10 et les votes récents dans la langue de l'utilisateur pour l'affichage
+    const translatedTopWords = await Promise.all(
+      topWords.map(async (item) => {
+        if (lang === 'en') return item;
+        try {
+          const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=${lang}&dt=t&q=${encodeURIComponent(item.word)}`);
+          if (res.ok) {
+            const data = await res.json();
+            return { ...item, word: data[0][0][0] };
+          }
+        } catch (e) {
+          console.error('Erreur traduction retour topWords:', e);
+        }
+        return item;
+      })
+    );
+
+    const translatedRecentVotes = await Promise.all(
+      (recentVotes || []).map(async (item) => {
+        if (lang === 'en') return item;
+        try {
+          const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=${lang}&dt=t&q=${encodeURIComponent(item.text)}`);
+          if (res.ok) {
+            const data = await res.json();
+            return { ...item, text: data[0][0][0] };
+          }
+        } catch (e) {
+          console.error('Erreur traduction retour recentVotes:', e);
+        }
+        return item;
+      })
+    );
+
+    return NextResponse.json({ 
+      globeData, 
+      topWords: translatedTopWords, 
+      recentVotes: translatedRecentVotes 
+    });
 
   } catch (err) {
     console.error('Erreur Fetch Stats Supabase:', err);
