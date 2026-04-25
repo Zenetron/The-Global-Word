@@ -22,7 +22,12 @@ export default function Home() {
 
   const fetchStats = async () => {
     try {
-      const res = await fetch('/api/stats');
+      // Calculer le minuit local de l'utilisateur en format ISO
+      const now = new Date();
+      const localMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const sinceParam = localMidnight.toISOString();
+
+      const res = await fetch(`/api/stats?since=${encodeURIComponent(sinceParam)}`);
       const data = await res.json();
       if (data.globeData) setGlobeData(data.globeData);
       if (data.topWords) setTopWords(data.topWords);

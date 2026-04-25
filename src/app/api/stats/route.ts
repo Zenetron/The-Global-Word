@@ -6,12 +6,11 @@ import { normalizeCountryName } from '@/lib/countries';
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
-  // Pour la V1, on peut utiliser period et zone pour filtrer (à implémenter en SQL plus tard si nécessaire)
-  // const period = searchParams.get('period') || 'today';
-  // const zone = searchParams.get('zone') || 'world';
+  const since = searchParams.get('since'); // Timestamp ISO du minuit local de l'utilisateur
 
   if (!isSupabaseConfigured()) {
-    // Mode Mock dynamique
+    // Mode Mock dynamique (déjà géré par le fallback existant)
+    // ... (le reste du bloc mock reste inchangé)
     const wordCounts: Record<string, { count: number, firstSeen: string, color: string }> = {};
     const wordDistribution: Record<string, Record<string, number>> = {};
 
@@ -129,12 +128,21 @@ export async function GET(req: Request) {
   }
 
   try {
-    // 1. Récupérer les votes récents (ex: les 1000 derniers)
-    const { data: votes, error } = await supabase!
+    // 1. Récupérer les votes récents
+    let query = supabase!
       .from('votes')
       .select('*')
-      .order('created_at', { ascending: false })
-      .limit(1000);
+      .order('created_at', { ascending: false });
+    
+    // Si un paramètre "since" est fourni, on filtre pour n'avoir que les mots d'aujourd'hui
+    if (since) {
+      query = query.gt('created_at', since);
+    } else {
+      // Sinon on garde une limite de sécurité
+      query = query.limit(1000);
+    }
+
+    const { data: votes, error } = await query;
 
     if (error) throw error;
 
