@@ -123,7 +123,7 @@ export async function GET(req: Request) {
 
     // 4. Traduire le Top 10 dans la langue de l'utilisateur pour l'affichage
     const translatedTopWords = await Promise.all(
-      mockTopWords.slice(0, 10).map(async (item) => {
+      mockTopWords.slice(0, 10).map(async (item: any) => {
         if (lang === 'en') return item; // Déjà en anglais (notre pivot)
         
         try {
@@ -222,7 +222,7 @@ export async function GET(req: Request) {
 
     // 4. Traduire le Top 10 et les votes récents dans la langue de l'utilisateur pour l'affichage
     const translatedTopWords = await Promise.all(
-      topWords.map(async (item) => {
+      topWords.map(async (item: any) => {
         if (lang === 'en') return item;
         try {
           const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=${lang}&dt=t&q=${encodeURIComponent(item.word)}`);
@@ -238,7 +238,7 @@ export async function GET(req: Request) {
     );
 
     const translatedRecentVotes = await Promise.all(
-      (recentVotes || []).map(async (item) => {
+      (recentVotes || []).map(async (item: any) => {
         if (lang === 'en') return item;
         try {
           const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=${lang}&dt=t&q=${encodeURIComponent(item.text)}`);
