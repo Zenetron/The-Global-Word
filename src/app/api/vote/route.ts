@@ -25,6 +25,21 @@ export async function POST(req: NextRequest) {
       ip = clientIp;
     }
     
+    // 1. Traduction automatique vers l'anglais (pour unifier les stats mondiales)
+    let translatedWord = word.trim();
+    try {
+      // On utilise une API de traduction gratuite (LibreTranslate ou similaire)
+      // Pour cet exemple, on peut imaginer un appel fetch
+      // Note: Pour une version de production stable, il faudra une clé API Google/DeepL
+      const translateRes = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=en&dt=t&q=${encodeURIComponent(translatedWord)}`);
+      if (translateRes.ok) {
+        const data = await translateRes.json();
+        translatedWord = data[0][0][0];
+      }
+    } catch (e) {
+      console.warn('Traduction échouée, on garde le mot original', e);
+    }
+
     const ipHash = hashIp(ip);
 
     // Récupérer la géolocalisation
@@ -90,17 +105,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Vous avez déjà voté aujourd\'hui.' }, { status: 429 });
     }
 
-    // 2. Insérer le vote
+    // Enregistrer le vote
     const { error: insertError } = await supabase!
       .from('votes')
-      .insert([{
-        word: word.trim(),
+      .insert({
+        word: translatedWord.toLowerCase(), // On stocke la version traduite et en minuscule
+        original_word: word.trim(), // On garde l'original au cas où
         country: geoData.country_name,
         city: geoData.city,
         lat: geoData.lat,
         lng: geoData.lon,
         ip_hash: ipHash
-      }]);
+      });
 
     if (insertError) {
       console.error('Erreur insertion Supabase:', insertError);
