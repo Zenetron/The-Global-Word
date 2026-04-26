@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { globalMockVotes } from '@/lib/mockData';
-import { getRandomNeonColor } from '../../../lib/utils';
-import { normalizeCountryName } from '@/lib/countries';
+import { normalizeCountryName, getRandomNeonColor } from '@/lib/utils';
+import { isForbidden } from '@/lib/blacklist';
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -38,7 +38,7 @@ export async function GET(req: Request) {
     });
 
     const mockTopWords = Object.entries(wordCounts)
-      .filter(([word]) => word.length >= 3)
+      .filter(([word]) => word.length >= 3 && !isForbidden(word))
       .sort((a, b) => {
         if (b[1].count !== a[1].count) return b[1].count - a[1].count;
         return new Date(a[1].firstSeen).getTime() - new Date(b[1].firstSeen).getTime();
@@ -199,7 +199,7 @@ export async function GET(req: Request) {
     });
 
     const topWords = Object.entries(wordCounts)
-      .filter(([word]) => word.length >= 3) // On ignore les mots de moins de 3 lettres
+      .filter(([word]) => word.length >= 3 && !isForbidden(word)) // On ignore les mots courts et interdits
       .sort((a, b) => b[1].count - a[1].count || new Date(a[1].firstSeen).getTime() - new Date(b[1].firstSeen).getTime())
       .slice(0, 10)
       .map(([word, data]) => ({ word, count: data.count, color: data.color, distribution: wordDistribution[word] }));
