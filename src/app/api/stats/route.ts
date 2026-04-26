@@ -11,7 +11,7 @@ export const revalidate = 0;
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const since = searchParams.get('since');
-  const lang = req.headers.get('accept-language')?.split(',')[0].split('-')[0] || 'en'; // Détection de la langue du visiteur
+  const lang = searchParams.get('lang') || req.headers.get('accept-language')?.split(',')[0].split('-')[0] || 'en'; // Priorité à la langue passée par le client
 
   if (!isSupabaseConfigured()) {
     // Mode Mock dynamique (déjà géré par le fallback existant)

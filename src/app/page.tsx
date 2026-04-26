@@ -28,7 +28,7 @@ export default function Home() {
       const localMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       const sinceParam = localMidnight.toISOString();
 
-      const res = await fetch(`/api/stats?since=${encodeURIComponent(sinceParam)}&t=${Date.now()}`);
+      const res = await fetch(`/api/stats?since=${encodeURIComponent(sinceParam)}&t=${Date.now()}&lang=${locale}`);
       const data = await res.json();
       if (data.globeData) setGlobeData(data.globeData);
       if (data.topWords) setTopWords(data.topWords);
