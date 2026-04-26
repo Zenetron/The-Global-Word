@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { globalMockVotes } from '@/lib/mockData';
-import { normalizeCountryName, getRandomNeonColor } from '@/lib/utils';
+import { getRandomNeonColor } from '@/lib/utils';
+import { normalizeCountryName } from '@/lib/countries';
 import { isForbidden } from '@/lib/blacklist';
 
 export const dynamic = 'force-dynamic';
