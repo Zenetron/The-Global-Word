@@ -8,6 +8,7 @@ import { COUNTRIES, CONTINENTS } from '@/lib/countries';
 interface SidebarStatsProps {
   globeData: any[];
   topWords: { word: string; count: number; color: string; distribution?: Record<string, number> }[];
+  countryTrends?: Record<string, any[]>;
   onSearchCountry?: (country: string) => void;
 }
 
@@ -16,7 +17,7 @@ type Zone = 'world' | 'continent' | 'country';
 
 import { useI18n } from '@/hooks/useI18n';
 
-export default function SidebarStats({ globeData, topWords, onSearchCountry }: SidebarStatsProps) {
+export default function SidebarStats({ globeData, topWords, countryTrends, onSearchCountry }: SidebarStatsProps) {
   const { t, locale } = useI18n();
   const [period, setPeriod] = useState<Period>('today');
   const [zone, setZone] = useState<Zone>('world');
@@ -119,6 +120,12 @@ export default function SidebarStats({ globeData, topWords, onSearchCountry }: S
     const isContinent = CONTINENTS.some(c => c.name === name);
     const countryInfo = !isContinent ? COUNTRIES.find(c => c.name === name || c.nameEn === name) : null;
     
+    // Si c'est un pays et qu'on a les trends du serveur, on les utilise directement
+    if (countryInfo && countryTrends) {
+      const trends = countryTrends[countryInfo.name] || countryTrends[countryInfo.nameEn] || [];
+      if (trends.length > 0) return trends;
+    }
+
     const zoneWords = globeData.filter(d => {
       if (isContinent) {
         const countriesInContinent = COUNTRIES.filter(c => c.continent === name).map(c => c.name.toLowerCase());

@@ -16,6 +16,7 @@ export default function Home() {
   const [globeData, setGlobeData] = useState<any[]>([]);
   const [topWords, setTopWords] = useState<any[]>([]);
   const [recentVotes, setRecentVotes] = useState<any[]>([]);
+  const [countryTrends, setCountryTrends] = useState<Record<string, any[]>>({});
   const [ringsData, setRingsData] = useState<any[]>([]);
   const [focusCoords, setFocusCoords] = useState<{lat: number, lng: number, distance?: number} | null>(null);
   const [selectedWord, setSelectedWord] = useState<{ word: string, country: string } | null>(null);
@@ -32,6 +33,7 @@ export default function Home() {
       if (data.globeData) setGlobeData(data.globeData);
       if (data.topWords) setTopWords(data.topWords);
       if (data.recentVotes) setRecentVotes(data.recentVotes);
+      if (data.countryTrends) setCountryTrends(data.countryTrends);
     } catch (e) {
       console.error(t('error'), e);
     }
@@ -187,7 +189,12 @@ export default function Home() {
         )}
 
         <SubmissionForm onSubmit={handleSubmission} />
-        <SidebarStats globeData={globeData} topWords={topWords} onSearchCountry={handleSearchCountry} />
+        <SidebarStats 
+          globeData={globeData} 
+          topWords={topWords} 
+          countryTrends={countryTrends}
+          onSearchCountry={handleSearchCountry} 
+        />
 
         {/* Affichage du mot sélectionné */}
         {selectedWord && (

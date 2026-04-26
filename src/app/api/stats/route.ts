@@ -173,6 +173,7 @@ export async function GET(req: Request) {
     // --- LOGIQUE D'AGRÉGATION (identique au mode mock mais sur données réelles) ---
     const wordCounts: Record<string, { count: number, firstSeen: string, color: string }> = {};
     const wordDistribution: Record<string, Record<string, number>> = {};
+    const countryWordDistribution: Record<string, Record<string, number>> = {};
     const countryTopWord: Record<string, { text: string, count: number, firstSeen: string, color: string, lat: number, lng: number }> = {};
 
     votes?.forEach((v: any) => {
@@ -192,6 +193,9 @@ export async function GET(req: Request) {
       // Distribution par pays
       if (!wordDistribution[normalizedWord]) wordDistribution[normalizedWord] = {};
       wordDistribution[normalizedWord][country] = (wordDistribution[normalizedWord][country] || 0) + 1;
+
+      if (!countryWordDistribution[country]) countryWordDistribution[country] = {};
+      countryWordDistribution[country][normalizedWord] = (countryWordDistribution[country][normalizedWord] || 0) + 1;
 
       // Top word par pays (le gagnant qui ira sur le globe)
       if (!countryTopWord[country]) {
@@ -283,10 +287,38 @@ export async function GET(req: Request) {
       })
     );
 
+    // 4. Calculer les Top 10 par pays pour la barre latérale
+    const countryTrends: Record<string, any[]> = {};
+    Object.entries(countryWordDistribution).forEach(([country, words]) => {
+      countryTrends[country] = Object.entries(words)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 10)
+        .map(([word, count]) => ({ word, count }));
+    });
+
+    // 5. Traduire les Top 10 locaux
+    const translatedCountryTrends: Record<string, any[]> = {};
+    for (const [country, trends] of Object.entries(countryTrends)) {
+      translatedCountryTrends[country] = await Promise.all(
+        trends.map(async (item: any) => {
+          if (lang === 'en') return item;
+          try {
+            const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=${lang}&dt=t&q=${encodeURIComponent(item.word)}`);
+            if (res.ok) {
+              const data = await res.json();
+              return { ...item, word: data[0][0][0].normalize('NFC') };
+            }
+          } catch (e) {}
+          return item;
+        })
+      );
+    }
+
     return NextResponse.json({ 
       globeData: translatedGlobeData, 
       topWords: translatedTopWords, 
-      recentVotes: translatedRecentVotes 
+      recentVotes: translatedRecentVotes,
+      countryTrends: translatedCountryTrends
     });
 
   } catch (err) {
