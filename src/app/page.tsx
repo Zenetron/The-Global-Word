@@ -44,7 +44,7 @@ export default function Home() {
     // Rafraîchir toutes les 30 secondes pour voir les nouveaux mots des autres
     const interval = setInterval(fetchStats, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [locale]);
 
   const handleSubmission = async (word: string) => {
     try {
