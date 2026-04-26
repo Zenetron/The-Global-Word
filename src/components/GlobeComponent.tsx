@@ -28,15 +28,20 @@ function GlobeInstance({ data, ringsData, onWordClick }: GlobeProps) {
       .atmosphereColor('#8000ff') // Halo violet cyber
       .atmosphereAltitude(0.12);
 
-    // Gérer les mots flottants
+    // Gérer les mots flottants en mode HTML (pour supporter les accents et le design premium)
     globe
-      .labelsData(data)
-      .labelLat((d: any) => d.lat)
-      .labelLng((d: any) => d.lng)
-      .labelText((d: any) => d.text)
-      .labelColor((d: any) => d.color)
-      .labelAltitude(0.05) // Légèrement au-dessus de la surface
-      .labelResolution(3);
+      .htmlElementsData(data)
+      .htmlElement((d: any) => {
+        const el = document.createElement('div');
+        el.innerHTML = `<div style="color: ${d.color}; text-shadow: 0 0 10px ${d.color}; font-weight: bold; font-family: sans-serif; font-size: 14px; background: rgba(0,0,0,0.5); padding: 2px 8px; border-radius: 10px; backdrop-blur: 4px; border: 1px solid ${d.color}44; white-space: nowrap; cursor: pointer; pointer-events: auto;">${d.text}</div>`;
+        el.onclick = () => {
+          if (onWordClick) {
+            onWordClick(d.text, d.country || 'Pays inconnu', d.lat, d.lng);
+          }
+        };
+        return el;
+      })
+      .htmlAltitude(0.05);
 
     // Gérer les ondes de choc (Rings)
     globe
