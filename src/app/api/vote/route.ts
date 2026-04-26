@@ -8,6 +8,7 @@ function hashIp(ip: string) {
 }
 
 import { isForbidden } from '@/lib/blacklist';
+import { COUNTRIES, normalizeCountryName } from '@/lib/countries';
 
 export const dynamic = 'force-dynamic';
 
@@ -80,8 +81,24 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, mock: true, country: geoData.country_name });
     }
 
-    // 2. Vérifier si l'IP a déjà voté depuis le minuit local
-    const sinceDate = localMidnight || new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    // 2. Vérifier si l'IP a déjà voté depuis le minuit local du pays détecté
+    const countryName = normalizeCountryName(geoData.country_name);
+    const countryInfo = COUNTRIES.find(c => c.name === countryName);
+    const lng = geoData.lon || countryInfo?.lng || 0;
+    const continent = countryInfo?.continent;
+    
+    // Estimation de l'offset UTC
+    let offsetHours = Math.round(lng / 15);
+    if (continent === 'Europe' && offsetHours < 1) offsetHours = 1;
+    
+    const now = new Date();
+    const countryNow = new Date(now.getTime() + offsetHours * 3600000);
+    const y = countryNow.getUTCFullYear();
+    const m = countryNow.getUTCMonth();
+    const d = countryNow.getUTCDate();
+    
+    const countryMidnightUTC = new Date(Date.UTC(y, m, d) - offsetHours * 3600000);
+    const sinceDate = countryMidnightUTC.toISOString();
     
     const { data: existingVote, error: checkError } = await supabase!
       .from('votes')

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { globalMockVotes } from '@/lib/mockData';
 import { getRandomNeonColor } from '@/lib/utils';
-import { normalizeCountryName } from '@/lib/countries';
+import { COUNTRIES, normalizeCountryName } from '@/lib/countries';
 import { isForbidden } from '@/lib/blacklist';
 import { translateBatch } from '@/lib/translator';
 
@@ -20,9 +20,15 @@ export async function GET(req: Request) {
     rawVotes = globalMockVotes;
   } else {
     try {
-      let query = supabase!.from('votes').select('*').order('created_at', { ascending: false });
-      if (since) query = query.gt('created_at', since);
-      else query = query.limit(1000);
+      // Pour le reset par pays, on récupère les votes des dernières 36 heures
+      // pour être sûr d'avoir le "aujourd'hui" de tous les fuseaux horaires.
+      const thirtySixHoursAgo = new Date(Date.now() - 36 * 60 * 60 * 1000).toISOString();
+      
+      let query = supabase!.from('votes')
+        .select('*')
+        .gt('created_at', thirtySixHoursAgo)
+        .order('created_at', { ascending: false });
+        
       const { data, error } = await query;
       if (error) throw error;
       rawVotes = data || [];
@@ -38,14 +44,41 @@ export async function GET(req: Request) {
   const countryTopWordRaw: Record<string, { text: string, count: number, firstSeen: string, color: string, lat: number, lng: number }> = {};
   const allUniqueWords = new Set<string>();
 
+  const now = new Date();
+
   rawVotes.forEach((v: any) => {
+    const countryName = normalizeCountryName(v.country);
+    
+    // --- FILTRE PAR MINUIT LOCAL DU PAYS ---
+    const countryInfo = COUNTRIES.find(c => c.name === countryName);
+    const lng = countryInfo?.lng ?? v.lng ?? 0;
+    const continent = countryInfo?.continent;
+    
+    // Estimation de l'offset UTC (15 degrés = 1 heure)
+    // On ajoute +1 pour l'Europe qui est politiquement décalée vers l'est par rapport à sa longitude
+    let offsetHours = Math.round(lng / 15);
+    if (continent === 'Europe' && offsetHours < 1) offsetHours = 1;
+    
+    // Calcul du minuit local du pays en utilisant UTC pour éviter les bugs de fuseau horaire du serveur
+    const countryNow = new Date(now.getTime() + offsetHours * 3600000);
+    const y = countryNow.getUTCFullYear();
+    const m = countryNow.getUTCMonth();
+    const d = countryNow.getUTCDate();
+    
+    // Minuit local exprimé en UTC
+    const countryMidnightUTC = new Date(Date.UTC(y, m, d) - offsetHours * 3600000);
+
+    // Si le vote est plus vieux que le minuit local du pays, on l'ignore pour les stats du jour
+    if (new Date(v.created_at) < countryMidnightUTC) {
+      return;
+    }
+
     const wordKey = v.word.normalize('NFC').trim().toLowerCase();
     if (wordKey.length < 3 || isForbidden(wordKey)) return;
 
     const displayWord = wordKey.charAt(0).toUpperCase() + wordKey.slice(1);
     allUniqueWords.add(displayWord);
     
-    const country = normalizeCountryName(v.country);
     const color = getRandomNeonColor();
 
     if (!wordCounts[displayWord]) {
@@ -53,16 +86,16 @@ export async function GET(req: Request) {
     }
     wordCounts[displayWord].count++;
 
-    if (!countryWordDistribution[country]) countryWordDistribution[country] = {};
-    countryWordDistribution[country][displayWord] = (countryWordDistribution[country][displayWord] || 0) + 1;
+    if (!countryWordDistribution[countryName]) countryWordDistribution[countryName] = {};
+    countryWordDistribution[countryName][displayWord] = (countryWordDistribution[countryName][displayWord] || 0) + 1;
 
-    if (!countryTopWordRaw[country]) {
-      countryTopWordRaw[country] = { text: displayWord, count: 1, firstSeen: v.created_at, color, lat: v.lat, lng: v.lng };
+    if (!countryTopWordRaw[countryName]) {
+      countryTopWordRaw[countryName] = { text: displayWord, count: 1, firstSeen: v.created_at, color, lat: v.lat, lng: v.lng };
     } else {
-      const currentLocalCount = countryWordDistribution[country][displayWord];
-      const existing = countryTopWordRaw[country];
+      const currentLocalCount = countryWordDistribution[countryName][displayWord];
+      const existing = countryTopWordRaw[countryName];
       if (currentLocalCount > existing.count) {
-        countryTopWordRaw[country] = { text: displayWord, count: currentLocalCount, firstSeen: v.created_at, color, lat: v.lat, lng: v.lng };
+        countryTopWordRaw[countryName] = { text: displayWord, count: currentLocalCount, firstSeen: v.created_at, color, lat: v.lat, lng: v.lng };
       }
     }
   });

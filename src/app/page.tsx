@@ -23,12 +23,7 @@ export default function Home() {
 
   const fetchStats = async () => {
     try {
-      // Calculer le minuit local de l'utilisateur en format ISO
-      const now = new Date();
-      const localMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      const sinceParam = localMidnight.toISOString();
-
-      const res = await fetch(`/api/stats?since=${encodeURIComponent(sinceParam)}&t=${Date.now()}&lang=${locale}`);
+      const res = await fetch(`/api/stats?t=${Date.now()}&lang=${locale}`);
       const data = await res.json();
       if (data.globeData) setGlobeData(data.globeData);
       if (data.topWords) setTopWords(data.topWords);
@@ -69,14 +64,10 @@ export default function Home() {
         }
       }
 
-      // Calculer le minuit local
-      const now = new Date();
-      const localMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
-
       const res = await fetch('/api/vote', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ word, clientIp: publicIp, localMidnight }),
+        body: JSON.stringify({ word, clientIp: publicIp }),
       });
       
       if (res.ok) {
