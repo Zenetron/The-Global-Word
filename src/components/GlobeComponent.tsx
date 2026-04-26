@@ -36,8 +36,9 @@ function GlobeInstance({ data, ringsData, onWordClick }: GlobeProps) {
       .labelText((d: any) => d.text)
       .labelColor((d: any) => d.color)
       .labelAltitude(0.05)
-      .labelSize((d: any) => d.size || 1)
-      .labelResolution(6); // Haute résolution pour les accents
+      .labelSize((d: any) => d.size * 1.5 || 1.5)
+      .labelDotRadius(0.5)
+      .labelResolution(3); // Résolution optimisée (3 au lieu de 6) pour 250+ pays
 
     // Gérer les ondes de choc (Rings)
     globe
@@ -47,30 +48,14 @@ function GlobeInstance({ data, ringsData, onWordClick }: GlobeProps) {
       .ringPropagationSpeed(3)
       .ringRepeatPeriod(1000);
 
-    // Ajuster le matériel du globe de base pour qu'il soit bien visible
+    // Ajuster le matériel du globe de base
     const material = globe.globeMaterial() as THREE.MeshPhongMaterial;
     if (material) {
-      material.color = new THREE.Color('#ffffff'); // Blanc de base pour ne pas assombrir la texture
-      material.emissive = new THREE.Color('#111111'); // Légère émission pour ne jamais être 100% noir
+      material.color = new THREE.Color('#ffffff');
+      material.emissive = new THREE.Color('#111111');
       material.emissiveIntensity = 0.5;
     }
   }, [globe, data, ringsData]);
-
-  // Ajuster la taille des labels en fonction du zoom avec un seuil pour éviter le clignotement
-  useFrame(({ camera }) => {
-    const dist = camera.position.length();
-    
-    // On n'actualise que si le changement est > 1% pour éviter le flickering
-    if (Math.abs(dist - lastUpdateDist.current) > (lastUpdateDist.current * 0.01)) {
-      const scaleFactor = dist / 300;
-      
-      globe
-        .labelSize((d: any) => d.size * scaleFactor * 1.8)
-        .labelDotRadius((d: any) => Math.max(d.size * scaleFactor * 0.4, 0.8 * scaleFactor));
-        
-      lastUpdateDist.current = dist;
-    }
-  });
 
   return (
     <primitive 
