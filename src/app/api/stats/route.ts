@@ -176,28 +176,29 @@ export async function GET(req: Request) {
     const countryTopWord: Record<string, { text: string, count: number, firstSeen: string, color: string, lat: number, lng: number }> = {};
 
     votes?.forEach((v: any) => {
-      // Normalisation Unicode NFC pour garantir le bon affichage des accents
       const cleanWord = v.word.normalize('NFC');
+      if (cleanWord.length < 3) return; // Filtre les mots courts pour le globe aussi
+
       const normalizedWord = cleanWord.charAt(0).toUpperCase() + cleanWord.slice(1).toLowerCase();
       const color = getRandomNeonColor();
       const country = normalizeCountryName(v.country);
       
-      // Compte global
+      // Compte global pour les stats
       if (!wordCounts[normalizedWord]) {
         wordCounts[normalizedWord] = { count: 0, firstSeen: v.created_at, color };
       }
       wordCounts[normalizedWord].count++;
 
-      // Distribution
+      // Distribution par pays
       if (!wordDistribution[normalizedWord]) wordDistribution[normalizedWord] = {};
       wordDistribution[normalizedWord][country] = (wordDistribution[normalizedWord][country] || 0) + 1;
 
-      // Gagnant par pays
-      const currentCount = wordCounts[normalizedWord].count;
+      // Top word par pays (le gagnant qui ira sur le globe)
       if (!countryTopWord[country]) {
-        countryTopWord[country] = { text: normalizedWord, count: currentCount, firstSeen: v.created_at, color, lat: v.lat, lng: v.lng };
+        countryTopWord[country] = { text: normalizedWord, count: wordCounts[normalizedWord].count, firstSeen: v.created_at, color, lat: v.lat, lng: v.lng };
       } else {
         const existing = countryTopWord[country];
+        const currentCount = wordCounts[normalizedWord].count;
         if (currentCount > existing.count || (currentCount === existing.count && new Date(v.created_at).getTime() < new Date(existing.firstSeen).getTime())) {
           countryTopWord[country] = { text: normalizedWord, count: currentCount, firstSeen: v.created_at, color, lat: v.lat, lng: v.lng };
         }
@@ -228,20 +229,25 @@ export async function GET(req: Request) {
       created_at: v.created_at
     }));
 
+    const removeAccents = (str: string) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
     // 4. Traduire le Globe, le Top 10 et les votes récents dans la langue de l'utilisateur
     const translatedGlobeData = await Promise.all(
       globeData.map(async (item: any) => {
-        if (lang === 'en') return item;
-        try {
-          const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=${lang}&dt=t&q=${encodeURIComponent(item.text)}`);
-          if (res.ok) {
-            const data = await res.json();
-            return { ...item, text: data[0][0][0].normalize('NFC') };
+        let finalWord = item.text;
+        if (lang !== 'en') {
+          try {
+            const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=${lang}&dt=t&q=${encodeURIComponent(item.text)}`);
+            if (res.ok) {
+              const data = await res.json();
+              finalWord = data[0][0][0].normalize('NFC');
+            }
+          } catch (e) {
+            console.error('Erreur traduction globeData:', e);
           }
-        } catch (e) {
-          console.error('Erreur traduction globeData:', e);
         }
-        return item;
+        // Pour le globe, on enlève les accents pour éviter le "?"
+        return { ...item, text: removeAccents(finalWord) };
       })
     );
 
