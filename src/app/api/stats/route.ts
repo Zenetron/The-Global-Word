@@ -177,34 +177,39 @@ export async function GET(req: Request) {
     const countryTopWord: Record<string, { text: string, count: number, firstSeen: string, color: string, lat: number, lng: number }> = {};
 
     votes?.forEach((v: any) => {
-      const cleanWord = v.word.normalize('NFC');
-      if (cleanWord.length < 3) return; // Filtre les mots courts pour le globe aussi
+      const cleanWord = v.word.normalize('NFC').trim();
+      if (cleanWord.length < 3) return;
 
-      const normalizedWord = cleanWord.charAt(0).toUpperCase() + cleanWord.slice(1).toLowerCase();
+      // On utilise une version minuscule pour les clés de dictionnaire (pour éviter les doublons "Paix" / "paix")
+      const wordKey = cleanWord.toLowerCase();
+      // On garde une version jolie pour l'affichage
+      const displayWord = wordKey.charAt(0).toUpperCase() + wordKey.slice(1);
+      
       const color = getRandomNeonColor();
       const country = normalizeCountryName(v.country);
       
       // Compte global pour les stats
-      if (!wordCounts[normalizedWord]) {
-        wordCounts[normalizedWord] = { count: 0, firstSeen: v.created_at, color };
+      if (!wordCounts[displayWord]) {
+        wordCounts[displayWord] = { count: 0, firstSeen: v.created_at, color };
       }
-      wordCounts[normalizedWord].count++;
+      wordCounts[displayWord].count++;
 
-      // Distribution par pays
-      if (!wordDistribution[normalizedWord]) wordDistribution[normalizedWord] = {};
-      wordDistribution[normalizedWord][country] = (wordDistribution[normalizedWord][country] || 0) + 1;
+      // Distribution par mot (pour les pays où un mot est présent)
+      if (!wordDistribution[displayWord]) wordDistribution[displayWord] = {};
+      wordDistribution[displayWord][country] = (wordDistribution[displayWord][country] || 0) + 1;
 
+      // Distribution par pays (pour le calcul des Top 10 locaux)
       if (!countryWordDistribution[country]) countryWordDistribution[country] = {};
-      countryWordDistribution[country][normalizedWord] = (countryWordDistribution[country][normalizedWord] || 0) + 1;
+      countryWordDistribution[country][displayWord] = (countryWordDistribution[country][displayWord] || 0) + 1;
 
-      // Top word par pays (le gagnant qui ira sur le globe)
+      // Top word par pays (pour le globe)
       if (!countryTopWord[country]) {
-        countryTopWord[country] = { text: normalizedWord, count: wordCounts[normalizedWord].count, firstSeen: v.created_at, color, lat: v.lat, lng: v.lng };
+        countryTopWord[country] = { text: displayWord, count: 1, firstSeen: v.created_at, color, lat: v.lat, lng: v.lng };
       } else {
+        const currentLocalCount = countryWordDistribution[country][displayWord];
         const existing = countryTopWord[country];
-        const currentCount = wordCounts[normalizedWord].count;
-        if (currentCount > existing.count || (currentCount === existing.count && new Date(v.created_at).getTime() < new Date(existing.firstSeen).getTime())) {
-          countryTopWord[country] = { text: normalizedWord, count: currentCount, firstSeen: v.created_at, color, lat: v.lat, lng: v.lng };
+        if (currentLocalCount > existing.count) {
+          countryTopWord[country] = { text: displayWord, count: currentLocalCount, firstSeen: v.created_at, color, lat: v.lat, lng: v.lng };
         }
       }
     });
