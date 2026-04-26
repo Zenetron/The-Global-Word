@@ -33,7 +33,21 @@ function GlobeInstance({ data, ringsData, onWordClick }: GlobeProps) {
       .htmlElementsData(data)
       .htmlElement((d: any) => {
         const el = document.createElement('div');
-        el.innerHTML = `<div style="color: ${d.color}; text-shadow: 0 0 10px ${d.color}; font-weight: bold; font-family: sans-serif; font-size: 14px; background: rgba(0,0,0,0.5); padding: 2px 8px; border-radius: 10px; backdrop-blur: 4px; border: 1px solid ${d.color}44; white-space: nowrap; cursor: pointer; pointer-events: auto;">${d.text}</div>`;
+        el.style.color = d.color;
+        el.style.textShadow = `0 0 10px ${d.color}`;
+        el.style.fontWeight = 'bold';
+        el.style.fontFamily = 'sans-serif';
+        el.style.fontSize = '14px';
+        el.style.background = 'rgba(0,0,0,0.5)';
+        el.style.padding = '2px 8px';
+        el.style.borderRadius = '10px';
+        el.style.backdropFilter = 'blur(4px)'; // Utilisation de backdropFilter au lieu de backdrop-blur
+        el.style.border = `1px solid ${d.color}44`;
+        el.style.whiteSpace = 'nowrap';
+        el.style.cursor = 'pointer';
+        el.style.pointerEvents = 'auto';
+        el.textContent = d.text; // Utilisation de textContent pour les accents
+        
         el.onclick = () => {
           if (onWordClick) {
             onWordClick(d.text, d.country || 'Pays inconnu', d.lat, d.lng);
