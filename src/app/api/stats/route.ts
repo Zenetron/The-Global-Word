@@ -4,6 +4,9 @@ import { globalMockVotes } from '@/lib/mockData';
 import { normalizeCountryName, getRandomNeonColor } from '@/lib/utils';
 import { isForbidden } from '@/lib/blacklist';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const since = searchParams.get('since');
@@ -172,7 +175,9 @@ export async function GET(req: Request) {
     const countryTopWord: Record<string, { text: string, count: number, firstSeen: string, color: string, lat: number, lng: number }> = {};
 
     votes?.forEach((v: any) => {
-      const normalizedWord = v.word.charAt(0).toUpperCase() + v.word.slice(1).toLowerCase();
+      // Normalisation Unicode NFC pour garantir le bon affichage des accents
+      const cleanWord = v.word.normalize('NFC');
+      const normalizedWord = cleanWord.charAt(0).toUpperCase() + cleanWord.slice(1).toLowerCase();
       const color = getRandomNeonColor();
       const country = normalizeCountryName(v.country);
       
@@ -216,13 +221,29 @@ export async function GET(req: Request) {
 
     const recentVotes = votes?.slice(0, 10).map((v: any) => ({
       id: v.id,
-      text: v.word.charAt(0).toUpperCase() + v.word.slice(1).toLowerCase(),
+      text: v.word.normalize('NFC').charAt(0).toUpperCase() + v.word.normalize('NFC').slice(1).toLowerCase(),
       country: v.country,
       color: getRandomNeonColor(),
       created_at: v.created_at
     }));
 
-    // 4. Traduire le Top 10 et les votes récents dans la langue de l'utilisateur pour l'affichage
+    // 4. Traduire le Globe, le Top 10 et les votes récents dans la langue de l'utilisateur
+    const translatedGlobeData = await Promise.all(
+      globeData.map(async (item: any) => {
+        if (lang === 'en') return item;
+        try {
+          const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=${lang}&dt=t&q=${encodeURIComponent(item.text)}`);
+          if (res.ok) {
+            const data = await res.json();
+            return { ...item, text: data[0][0][0].normalize('NFC') };
+          }
+        } catch (e) {
+          console.error('Erreur traduction globeData:', e);
+        }
+        return item;
+      })
+    );
+
     const translatedTopWords = await Promise.all(
       topWords.map(async (item: any) => {
         if (lang === 'en') return item;
@@ -230,10 +251,10 @@ export async function GET(req: Request) {
           const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=${lang}&dt=t&q=${encodeURIComponent(item.word)}`);
           if (res.ok) {
             const data = await res.json();
-            return { ...item, word: data[0][0][0] };
+            return { ...item, word: data[0][0][0].normalize('NFC') };
           }
         } catch (e) {
-          console.error('Erreur traduction retour topWords:', e);
+          console.error('Erreur traduction topWords:', e);
         }
         return item;
       })
@@ -246,17 +267,17 @@ export async function GET(req: Request) {
           const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=${lang}&dt=t&q=${encodeURIComponent(item.text)}`);
           if (res.ok) {
             const data = await res.json();
-            return { ...item, text: data[0][0][0] };
+            return { ...item, text: data[0][0][0].normalize('NFC') };
           }
         } catch (e) {
-          console.error('Erreur traduction retour recentVotes:', e);
+          console.error('Erreur traduction recentVotes:', e);
         }
         return item;
       })
     );
 
     return NextResponse.json({ 
-      globeData, 
+      globeData: translatedGlobeData, 
       topWords: translatedTopWords, 
       recentVotes: translatedRecentVotes 
     });
