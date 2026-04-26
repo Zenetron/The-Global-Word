@@ -1,28 +1,4 @@
-export interface Continent {
-  name: string;
-  nameEn: string;
-  lat: number;
-  lng: number;
-}
-
-export interface Country {
-  name: string;
-  nameEn: string;
-  lat: number;
-  lng: number;
-  continent: string;
-}
-
-export const CONTINENTS: Continent[] = [
-  { name: 'Afrique', nameEn: 'Africa', lat: 5.0, lng: 20.0 },
-  { name: 'Amérique du Nord', nameEn: 'North America', lat: 40.0, lng: -100.0 },
-  { name: 'Amérique du Sud', nameEn: 'South America', lat: -15.0, lng: -60.0 },
-  { name: 'Asie', nameEn: 'Asia', lat: 45.0, lng: 90.0 },
-  { name: 'Europe', nameEn: 'Europe', lat: 50.0, lng: 15.0 },
-  { name: 'Océanie', nameEn: 'Oceania', lat: -25.0, lng: 135.0 }
-];
-
-export const COUNTRIES: Country[] = [
+[
   {
     "name": "Afghanistan",
     "nameEn": "Afghanistan",
@@ -1773,36 +1749,4 @@ export const COUNTRIES: Country[] = [
     "lng": 30,
     "continent": "Afrique"
   }
-];
-
-export const normalizeCountryName = (name: string): string => {
-  if (!name) return 'Inconnu';
-  
-  // Mapping pour les noms courants vers le nom français utilisé dans COUNTRIES
-  const mapping: Record<string, string> = {
-    'Netherlands': 'Pays-Bas',
-    'The Netherlands': 'Pays-Bas',
-    'United States': 'États-Unis',
-    'United States of America': 'États-Unis',
-    'USA': 'États-Unis',
-    'United Kingdom': 'Angleterre',
-    'UK': 'Angleterre',
-    'Germany': 'Allemagne',
-    'Spain': 'Espagne',
-    'Italy': 'Italie',
-    'Belgium': 'Belgique',
-    'Switzerland': 'Suisse',
-    'Brazil': 'Brésil',
-    'Mexico': 'Mexique',
-    'Japan': 'Japon',
-    'China': 'Chine',
-    'Russia': 'Russie',
-    'South Korea': 'Corée du Sud',
-    'Egypt': 'Égypte',
-    'Morocco': 'Maroc',
-    'Algeria': 'Algérie',
-    'Tunisia': 'Tunisie'
-  };
-
-  return mapping[name] || name;
-};
+]
