@@ -37,7 +37,6 @@ function GlobeInstance({ data, ringsData, onWordClick }: GlobeProps) {
       .labelColor((d: any) => d.color)
       .labelAltitude(0.05)
       .labelSize((d: any) => d.size || 1)
-      .labelType(() => 'capsule') // Look plus moderne
       .labelResolution(6); // Haute résolution pour les accents
 
     // Gérer les ondes de choc (Rings)
