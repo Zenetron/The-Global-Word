@@ -28,31 +28,17 @@ function GlobeInstance({ data, ringsData, onWordClick }: GlobeProps) {
       .atmosphereColor('#8000ff') // Halo violet cyber
       .atmosphereAltitude(0.12);
 
-    // Gérer les mots flottants en mode HTML
+    // Gérer les mots flottants (Labels 3D natifs)
     globe
-      .htmlElementsData(data)
-      .htmlLat((d: any) => d.lat)
-      .htmlLng((d: any) => d.lng)
-      .htmlElement((d: any) => {
-        const el = document.createElement('div');
-        el.style.color = d.color;
-        el.style.fontWeight = 'bold';
-        el.style.fontSize = '14px';
-        el.style.padding = '2px 8px';
-        el.style.background = 'rgba(0,0,0,0.6)';
-        el.style.borderRadius = '10px';
-        el.style.border = `1px solid ${d.color}88`;
-        el.style.whiteSpace = 'nowrap';
-        el.style.pointerEvents = 'auto';
-        el.style.cursor = 'pointer';
-        el.textContent = d.text;
-        
-        el.onclick = () => {
-          if (onWordClick) onWordClick(d.text, d.country || 'Pays inconnu', d.lat, d.lng);
-        };
-        return el;
-      })
-      .htmlAltitude(0.06);
+      .labelsData(data)
+      .labelLat((d: any) => d.lat)
+      .labelLng((d: any) => d.lng)
+      .labelText((d: any) => d.text)
+      .labelColor((d: any) => d.color)
+      .labelAltitude(0.05)
+      .labelSize((d: any) => d.size || 1)
+      .labelType(() => 'capsule') // Look plus moderne
+      .labelResolution(6); // Haute résolution pour les accents
 
     // Gérer les ondes de choc (Rings)
     globe
