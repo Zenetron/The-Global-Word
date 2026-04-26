@@ -9,7 +9,7 @@ function hashIp(ip: string) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { word, clientIp } = await req.json();
+    const { word, clientIp, localMidnight } = await req.json();
 
     if (!word || word.length > 20) {
       return NextResponse.json({ error: 'Mot invalide' }, { status: 400 });
@@ -28,9 +28,6 @@ export async function POST(req: NextRequest) {
     // 1. Traduction automatique vers l'anglais (pour unifier les stats mondiales)
     let translatedWord = word.trim();
     try {
-      // On utilise une API de traduction gratuite (LibreTranslate ou similaire)
-      // Pour cet exemple, on peut imaginer un appel fetch
-      // Note: Pour une version de production stable, il faudra une clé API Google/DeepL
       const translateRes = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=en&dt=t&q=${encodeURIComponent(translatedWord)}`);
       if (translateRes.ok) {
         const data = await translateRes.json();
@@ -43,13 +40,11 @@ export async function POST(req: NextRequest) {
     const ipHash = hashIp(ip);
 
     // Récupérer la géolocalisation
-    // En développement local, le serveur voit ::1. On utilise une IP de fallback pour tester si aucune IP client n'est fournie.
     const queryIp = (ip === '127.0.0.1' || ip === '::1' || ip.startsWith('192.168.') || ip.startsWith('10.')) ? '8.8.8.8' : ip;
     
-    let geoData = { lat: 48.8566, lon: 2.3522, city: 'Paris', country_name: 'France' }; // Fallback ultime
+    let geoData = { lat: 48.8566, lon: 2.3522, city: 'Paris', country_name: 'France' }; 
     
     try {
-      // Utiliser ip-api.com avec lang=fr pour correspondre à notre liste COUNTRIES
       const geoResponse = await fetch(`http://ip-api.com/json/${queryIp}?lang=fr`);
       if (geoResponse.ok) {
         const data = await geoResponse.json();
@@ -66,11 +61,11 @@ export async function POST(req: NextRequest) {
       console.error('Erreur Géolocalisation', e);
     }
 
-    // Si Supabase n'est pas configuré, on simule le succès en ajoutant au mock
+    // Si Supabase n'est pas configuré, on simule le succès
     if (!isSupabaseConfigured()) {
       globalMockVotes.push({
         id: Date.now(),
-        word: word.trim(),
+        word: translatedWord.toLowerCase(),
         country: geoData.country_name,
         lat: geoData.lat,
         lng: geoData.lon,
@@ -78,22 +73,17 @@ export async function POST(req: NextRequest) {
         created_at: new Date().toISOString(),
         color: '#00ffff'
       });
-      return NextResponse.json({ 
-        success: true, 
-        mock: true, 
-        country: geoData.country_name,
-        detectedIp: queryIp 
-      });
+      return NextResponse.json({ success: true, mock: true, country: geoData.country_name });
     }
 
-    // Vérifier si l'IP a déjà voté dans les dernières 24h
-    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    // 2. Vérifier si l'IP a déjà voté depuis le minuit local
+    const sinceDate = localMidnight || new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     
     const { data: existingVote, error: checkError } = await supabase!
       .from('votes')
       .select('id')
       .eq('ip_hash', ipHash)
-      .gt('created_at', twentyFourHoursAgo)
+      .gt('created_at', sinceDate)
       .maybeSingle();
 
     if (checkError) {
@@ -101,7 +91,6 @@ export async function POST(req: NextRequest) {
     }
 
     if (existingVote) {
-      console.log('Vote trouvé pour cet IP:', existingVote);
       return NextResponse.json({ error: 'Vous avez déjà voté aujourd\'hui.' }, { status: 429 });
     }
 
@@ -109,8 +98,7 @@ export async function POST(req: NextRequest) {
     const { error: insertError } = await supabase!
       .from('votes')
       .insert({
-        word: translatedWord.toLowerCase(), // On stocke la version traduite et en minuscule
-        original_word: word.trim(), // On garde l'original au cas où
+        word: translatedWord.toLowerCase(),
         country: geoData.country_name,
         city: geoData.city,
         lat: geoData.lat,
@@ -123,11 +111,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Erreur lors de la sauvegarde.' }, { status: 500 });
     }
 
-    return NextResponse.json({ 
-      success: true, 
-      country: geoData.country_name,
-      detectedIp: queryIp 
-    });
+    return NextResponse.json({ success: true, country: geoData.country_name });
   } catch (err) {
     console.error('Erreur API Vote:', err);
     return NextResponse.json({ error: 'Erreur interne' }, { status: 500 });

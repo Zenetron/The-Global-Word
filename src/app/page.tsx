@@ -67,10 +67,14 @@ export default function Home() {
         }
       }
 
+      // Calculer le minuit local
+      const now = new Date();
+      const localMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+
       const res = await fetch('/api/vote', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ word, clientIp: publicIp }),
+        body: JSON.stringify({ word, clientIp: publicIp, localMidnight }),
       });
       
       if (res.ok) {
