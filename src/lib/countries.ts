@@ -74,7 +74,9 @@ export const COUNTRIES: Country[] = [
   { name: 'Turquie', nameEn: 'Turkey', lat: 38.9637, lng: 35.2433, continent: 'Asie' },
   { name: 'Ukraine', nameEn: 'Ukraine', lat: 48.3794, lng: 31.1656, continent: 'Europe' },
   { name: 'Venezuela', nameEn: 'Venezuela', lat: 9.1899, lng: -64.6066, continent: 'Amérique du Sud' },
-  { name: 'Vietnam', nameEn: 'Vietnam', lat: 14.0583, lng: 108.2772, continent: 'Asie' }
+  { name: 'Vietnam', nameEn: 'Vietnam', lat: 14.0583, lng: 108.2772, continent: 'Asie' },
+  { name: 'Mauritanie', nameEn: 'Mauritania', lat: 21.0079, lng: -10.9408, continent: 'Afrique' },
+  { name: 'Palestine', nameEn: 'Palestine', lat: 31.9522, lng: 35.2332, continent: 'Moyen-Orient' }
 ];
 
 export const normalizeCountryName = (name: string): string => {

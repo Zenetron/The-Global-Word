@@ -9,6 +9,8 @@ function hashIp(ip: string) {
 
 import { isForbidden } from '@/lib/blacklist';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: NextRequest) {
   try {
     const { word, clientIp, localMidnight } = await req.json();
