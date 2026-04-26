@@ -117,12 +117,19 @@ export default function SidebarStats({ globeData, topWords, onSearchCountry }: S
   // Helper pour obtenir le Top 10 d'une zone spécifique
   const getTopTenForZone = (name: string) => {
     const isContinent = CONTINENTS.some(c => c.name === name);
+    const countryInfo = !isContinent ? COUNTRIES.find(c => c.name === name || c.nameEn === name) : null;
+    
     const zoneWords = globeData.filter(d => {
-      if (!isContinent) {
-        return d.country && d.country.toLowerCase() === name.toLowerCase();
-      } else {
+      if (isContinent) {
         const countriesInContinent = COUNTRIES.filter(c => c.continent === name).map(c => c.name.toLowerCase());
         return d.country && countriesInContinent.includes(d.country.toLowerCase());
+      } else {
+        // Chercher par nom FR ou EN
+        return d.country && (
+          d.country.toLowerCase() === name.toLowerCase() || 
+          (countryInfo && d.country.toLowerCase() === countryInfo.name.toLowerCase()) ||
+          (countryInfo && d.country.toLowerCase() === countryInfo.nameEn.toLowerCase())
+        );
       }
     });
 
