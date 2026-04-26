@@ -28,34 +28,31 @@ function GlobeInstance({ data, ringsData, onWordClick }: GlobeProps) {
       .atmosphereColor('#8000ff') // Halo violet cyber
       .atmosphereAltitude(0.12);
 
-    // Gérer les mots flottants en mode HTML (pour supporter les accents et le design premium)
+    // Gérer les mots flottants en mode HTML
     globe
       .htmlElementsData(data)
+      .htmlLat((d: any) => d.lat)
+      .htmlLng((d: any) => d.lng)
       .htmlElement((d: any) => {
         const el = document.createElement('div');
         el.style.color = d.color;
-        el.style.textShadow = `0 0 10px ${d.color}`;
         el.style.fontWeight = 'bold';
-        el.style.fontFamily = 'sans-serif';
         el.style.fontSize = '14px';
-        el.style.background = 'rgba(0,0,0,0.5)';
         el.style.padding = '2px 8px';
+        el.style.background = 'rgba(0,0,0,0.6)';
         el.style.borderRadius = '10px';
-        el.style.backdropFilter = 'blur(4px)'; // Utilisation de backdropFilter au lieu de backdrop-blur
-        el.style.border = `1px solid ${d.color}44`;
+        el.style.border = `1px solid ${d.color}88`;
         el.style.whiteSpace = 'nowrap';
-        el.style.cursor = 'pointer';
         el.style.pointerEvents = 'auto';
-        el.textContent = d.text; // Utilisation de textContent pour les accents
+        el.style.cursor = 'pointer';
+        el.textContent = d.text;
         
         el.onclick = () => {
-          if (onWordClick) {
-            onWordClick(d.text, d.country || 'Pays inconnu', d.lat, d.lng);
-          }
+          if (onWordClick) onWordClick(d.text, d.country || 'Pays inconnu', d.lat, d.lng);
         };
         return el;
       })
-      .htmlAltitude(0.05);
+      .htmlAltitude(0.06);
 
     // Gérer les ondes de choc (Rings)
     globe
