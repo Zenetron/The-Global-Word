@@ -6,67 +6,49 @@ export async function translateBatch(words: string[], targetLang: string): Promi
   }
 
   const results: Record<string, string> = {};
-  const wordsToTranslate: string[] = [];
+  const uniqueWords = Array.from(new Set(words.filter(Boolean)));
+  
+  // 1. Initialiser les résultats avec les mots originaux
+  words.forEach(w => { if(w) results[w] = w; });
 
-  // 1. Check cache and find words that need translation
-  for (const word of words) {
-    if (!word) continue;
-    if (translationCache[targetLang] && translationCache[targetLang][word.toLowerCase()]) {
-      results[word] = translationCache[targetLang][word.toLowerCase()];
-    } else {
-      wordsToTranslate.push(word);
+  // 2. Filtrer ce qui n'est pas dans le cache
+  const wordsToTranslate = uniqueWords.filter(word => {
+    const cached = translationCache[targetLang]?.[word.toLowerCase()];
+    if (cached) {
+      results[word] = cached;
+      return false;
     }
-  }
+    return true;
+  });
 
   if (wordsToTranslate.length === 0) return results;
 
-  // 2. Translate unique words to avoid redundant calls
-  const uniqueWords = Array.from(new Set(wordsToTranslate));
-  
-  try {
-    // Google Translate GTX supports batching with multiple 'q' parameters
-    // We'll do it in chunks of 50 to avoid URL length limits
-    const chunkSize = 50;
-    for (let i = 0; i < uniqueWords.length; i += chunkSize) {
-      const chunk = uniqueWords.slice(i, i + chunkSize);
-      const queryParams = chunk.map(w => `q=${encodeURIComponent(w)}`).join('&');
-      const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=${targetLang}&dt=t&${queryParams}`;
-      
-      const res = await fetch(url);
-      if (res.ok) {
-        const data = await res.json();
-        // The structure for multiple 'q' is an array of responses if using the right endpoint, 
-        // but for 'single?client=gtx' it usually returns them in the same array structure.
-        // Actually, for multiple 'q', it returns an array of results.
-        
-        chunk.forEach((word, idx) => {
-          let translated = word;
-          try {
-            // Google Translate returns results in order
-            if (data[idx] && data[idx][0] && data[idx][0][0]) {
-               translated = data[idx][0][0];
-            } else if (data[0] && data[0][idx] && data[0][idx][0]) {
-               // Alternate format
-               translated = data[0][idx][0];
-            } else if (chunk.length === 1 && data[0][0][0]) {
-               translated = data[0][0][0];
-            }
-          } catch (e) {}
+  // 3. Traduire en parallèle avec une limite de 20 à la fois pour éviter d'être bloqué
+  const chunks = [];
+  const chunkSize = 20;
+  for (let i = 0; i < wordsToTranslate.length; i += chunkSize) {
+    chunks.push(wordsToTranslate.slice(i, i + chunkSize));
+  }
 
-          results[word] = translated;
-          
-          // Save to cache
-          if (!translationCache[targetLang]) translationCache[targetLang] = {};
-          translationCache[targetLang][word.toLowerCase()] = translated;
-        });
+  for (const chunk of chunks) {
+    await Promise.all(chunk.map(async (word) => {
+      try {
+        const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=${targetLang}&dt=t&q=${encodeURIComponent(word)}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data[0] && data[0][0] && data[0][0][0]) {
+            const translated = data[0][0][0];
+            results[word] = translated;
+            
+            // Mettre en cache
+            if (!translationCache[targetLang]) translationCache[targetLang] = {};
+            translationCache[targetLang][word.toLowerCase()] = translated;
+          }
+        }
+      } catch (e) {
+        console.error(`Translation error for ${word}:`, e);
       }
-    }
-  } catch (error) {
-    console.error('Batch translation error:', error);
-    // Fallback to original words for anything failed
-    uniqueWords.forEach(w => {
-      if (!results[w]) results[w] = w;
-    });
+    }));
   }
 
   return results;
