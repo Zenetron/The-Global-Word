@@ -1,9 +1,7 @@
 const translationCache: Record<string, Record<string, string>> = {};
 
 export async function translateBatch(words: string[], targetLang: string): Promise<Record<string, string>> {
-  if (targetLang === 'en' || words.length === 0) {
-    return Object.fromEntries(words.map(w => [w, w]));
-  }
+  if (words.length === 0) return {};
 
   const results: Record<string, string> = {};
   const uniqueWords = Array.from(new Set(words.filter(Boolean)));
@@ -33,7 +31,7 @@ export async function translateBatch(words: string[], targetLang: string): Promi
   for (const chunk of chunks) {
     await Promise.all(chunk.map(async (word) => {
       try {
-        const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=${targetLang}&dt=t&q=${encodeURIComponent(word)}`);
+        const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${targetLang}&dt=t&q=${encodeURIComponent(word)}`);
         if (res.ok) {
           const data = await res.json();
           if (data && data[0] && data[0][0] && data[0][0][0]) {
