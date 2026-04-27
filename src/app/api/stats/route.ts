@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { globalMockVotes } from '@/lib/mockData';
-import { getRandomNeonColor } from '@/lib/utils';
+import { getRandomNeonColor, removeAccents } from '@/lib/utils';
 import { COUNTRIES, normalizeCountryName } from '@/lib/countries';
 import { isForbidden } from '@/lib/blacklist';
 import { translateBatch } from '@/lib/translator';
@@ -39,7 +39,7 @@ export async function GET(req: Request) {
   }
 
   // --- AGRÉGATION ---
-  const wordCounts: Record<string, { count: number, firstSeen: string, color: string }> = {};
+  const wordCounts: Record<string, { count: number, firstSeen: string, color: string, distribution: Record<string, number> }> = {};
   const countryWordDistribution: Record<string, Record<string, number>> = {};
   const countryTopWordRaw: Record<string, { text: string, count: number, firstSeen: string, color: string, lat: number, lng: number }> = {};
   const allUniqueWords = new Set<string>();
@@ -82,9 +82,10 @@ export async function GET(req: Request) {
     const color = getRandomNeonColor();
 
     if (!wordCounts[displayWord]) {
-      wordCounts[displayWord] = { count: 0, firstSeen: v.created_at, color };
+      wordCounts[displayWord] = { count: 0, firstSeen: v.created_at, color, distribution: {} };
     }
     wordCounts[displayWord].count++;
+    wordCounts[displayWord].distribution[countryName] = (wordCounts[displayWord].distribution[countryName] || 0) + 1;
 
     if (!countryWordDistribution[countryName]) countryWordDistribution[countryName] = {};
     countryWordDistribution[countryName][displayWord] = (countryWordDistribution[countryName][displayWord] || 0) + 1;
@@ -102,7 +103,6 @@ export async function GET(req: Request) {
 
   // --- TRADUCTION MASSIVE ---
   const translationMap = await translateBatch(Array.from(allUniqueWords), lang);
-  const removeAccents = (str: string) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
   // --- PRÉPARATION DES DONNÉES FINALES ---
   
@@ -111,9 +111,10 @@ export async function GET(req: Request) {
     .sort((a, b) => b[1].count - a[1].count || new Date(a[1].firstSeen).getTime() - new Date(b[1].firstSeen).getTime())
     .slice(0, 10)
     .map(([word, data]) => ({
-      word: translationMap[word] || word,
+      word: removeAccents(translationMap[word] || word),
       count: data.count,
-      color: data.color
+      color: data.color,
+      distribution: data.distribution
     }));
 
   // 2. Globe Data
@@ -146,15 +147,30 @@ export async function GET(req: Request) {
       .sort((a, b) => b[1] - a[1])
       .slice(0, 10)
       .map(([word, count]) => ({
-        word: translationMap[word] || word,
+        word: removeAccents(translationMap[word] || word),
         count
       }));
   });
+
+  // 5. Word Distributions (pour cliquer sur n'importe quel mot du top 50)
+  const wordDistributions: Record<string, any> = {};
+  Object.entries(wordCounts)
+    .sort((a, b) => b[1].count - a[1].count)
+    .slice(0, 50)
+    .forEach(([word, data]) => {
+      const translated = removeAccents(translationMap[word] || word);
+      wordDistributions[translated] = {
+        count: data.count,
+        color: data.color,
+        distribution: data.distribution
+      };
+    });
 
   return NextResponse.json({ 
     globeData, 
     topWords, 
     recentVotes,
-    countryTrends: translatedCountryTrends
+    countryTrends: translatedCountryTrends,
+    wordDistributions
   });
 }

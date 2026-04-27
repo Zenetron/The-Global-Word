@@ -4,10 +4,12 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Globe, MapPin, Map, Search, ChevronDown } from 'lucide-react';
 import { COUNTRIES, CONTINENTS } from '@/lib/countries';
+import { removeAccents } from '@/lib/utils';
 
 interface SidebarStatsProps {
   globeData: any[];
   topWords: { word: string; count: number; color: string; distribution?: Record<string, number> }[];
+  wordDistributions?: Record<string, { count: number; color: string; distribution: Record<string, number> }>;
   countryTrends?: Record<string, any[]>;
   onSearchCountry?: (country: string) => void;
 }
@@ -17,7 +19,7 @@ type Zone = 'world' | 'continent' | 'country';
 
 import { useI18n } from '@/hooks/useI18n';
 
-export default function SidebarStats({ globeData, topWords, countryTrends, onSearchCountry }: SidebarStatsProps) {
+export default function SidebarStats({ globeData, topWords, wordDistributions, countryTrends, onSearchCountry }: SidebarStatsProps) {
   const { t, locale } = useI18n();
   const [period, setPeriod] = useState<Period>('today');
   const [zone, setZone] = useState<Zone>('world');
@@ -166,15 +168,23 @@ export default function SidebarStats({ globeData, topWords, countryTrends, onSea
     return 0;
   });
 
+  const getDisplayCountry = (name: string) => {
+    const country = COUNTRIES.find(c => c.name === name || c.nameEn === name);
+    if (country) return locale === 'fr' ? country.name : country.nameEn;
+    return name;
+  };
+
   // Helper pour obtenir les pays où un mot est le plus présent
   const getTopCountriesForWord = (word: string) => {
-    const wordInfo = topWords.find(w => w.word === word);
+    const normalized = removeAccents(word);
+    // On cherche d'abord dans wordDistributions (plus complet) sinon dans topWords
+    const wordInfo = (wordDistributions && wordDistributions[normalized]) || topWords.find(w => w.word === normalized);
     if (!wordInfo || !wordInfo.distribution) return [];
 
     return Object.entries(wordInfo.distribution)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 10)
-      .map(([country, count]) => ({ country, count }));
+      .map(([country, count]) => ({ country, count, color: wordInfo.color }));
   };
 
   const displayWords = selectedWordFilter
@@ -379,7 +389,7 @@ export default function SidebarStats({ globeData, topWords, countryTrends, onSea
                 <div className="flex items-center gap-3">
                   <span className="text-white/30 text-xs w-4">{index + 1}</span>
                   <span className="font-medium text-lg" style={{ color: item.color || '#fff', textShadow: item.color ? `0 0 5px ${item.color}80` : 'none' }}>
-                    {item.word || item.country}
+                    {item.word || getDisplayCountry(item.country)}
                   </span>
                 </div>
                 <span className="text-white/70 font-mono text-sm">{item.count}</span>
