@@ -27,7 +27,8 @@ export async function GET(req: Request) {
       let query = supabase!.from('votes')
         .select('*')
         .gt('created_at', thirtySixHoursAgo)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(15000);
         
       const { data, error } = await query;
       if (error) throw error;

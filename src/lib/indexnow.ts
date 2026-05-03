@@ -1,5 +1,5 @@
 const INDEXNOW_KEY = '3bbe261c68784310999363997dc1f42f';
-const HOST = 'the-global-word.vercel.app';
+const HOST = 'theglobalword.org';
 const URL_LIST = [
   `https://${HOST}/`,
 ];

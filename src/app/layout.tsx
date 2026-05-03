@@ -14,6 +14,10 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://theglobalword.org"),
+  alternates: {
+    canonical: "/",
+  },
   title: "The Global Word | Visualisation d'émotions en temps réel",
   description: "Découvrez comment le monde se sent aujourd'hui à travers une visualisation 3D interactive et globale. Partagez votre mot du jour.",
   keywords: ["global word", "visualisation 3D", "émotions mondiales", "temps réel", "carte interactive", "partage", "sentiments"],
@@ -21,7 +25,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "The Global Word",
     description: "Comment se sent le monde aujourd'hui ?",
-    url: "https://the-global-word.vercel.app", // À mettre à jour si vous changez de domaine
+    url: "https://theglobalword.org", // À mettre à jour si vous changez de domaine
     siteName: "The Global Word",
     images: [
       {
