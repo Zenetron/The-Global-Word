@@ -75,7 +75,8 @@ export async function GET(req: Request) {
     }
 
     const wordKey = v.word.normalize('NFC').trim().toLowerCase();
-    if (wordKey.length < 3 || isForbidden(wordKey)) return;
+    const isException = ['gp', 'f1', 'ia', 'ai', 'us', 'uk', 'eu'].includes(wordKey);
+    if ((wordKey.length < 3 && !isException) || isForbidden(wordKey)) return;
 
     const displayWord = wordKey.charAt(0).toUpperCase() + wordKey.slice(1);
     allUniqueWords.add(displayWord);
