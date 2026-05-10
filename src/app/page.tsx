@@ -38,14 +38,14 @@ export default function Home() {
 
   useEffect(() => {
     fetchStats();
-    // Rafraîchir toutes les 30 secondes pour voir les nouveaux mots des autres
+
     const interval = setInterval(fetchStats, 30000);
     return () => clearInterval(interval);
   }, [locale]);
 
   const handleSubmission = async (word: string) => {
     try {
-      // En développement local, le serveur voit ::1. On récupère l'IP publique côté client pour aider.
+
       let publicIp = null;
       try {
         const ipRes = await fetch('https://api.ipify.org?format=json');
@@ -54,7 +54,7 @@ export default function Home() {
           publicIp = ipData.ip;
         }
       } catch (e) {
-        // Si ipify échoue (bloqué par AdBlock souvent), on tente ipapi
+
         try {
           const ipRes2 = await fetch('https://ipapi.co/json/');
           if (ipRes2.ok) {
@@ -74,10 +74,9 @@ export default function Home() {
       
       if (res.ok) {
         const result = await res.json();
-        // Rafraîchir les données
+
         await fetchStats();
-        
-        // Déclencher un effet visuel (Pulse) sur le globe
+
         const country = COUNTRIES.find(c => c.name === result.country);
         if (country) {
           const newRing = { lat: country.lat, lng: country.lng, color: '#00ffff' };
@@ -114,8 +113,7 @@ export default function Home() {
 
     if (countryGeo) {
       setFocusCoords({ lat: countryGeo.lat, lng: countryGeo.lng, distance: 180 });
-      
-      // Simuler le clic : trouver le mot le plus fréquent pour ce pays
+
       const localWords = globeData.filter((d: any) => d.country && d.country.toLowerCase() === countryName.toLowerCase());
       if (localWords.length > 0) {
         setSelectedWord({ word: localWords[0].text, country: localWords[0].country });
@@ -125,7 +123,6 @@ export default function Home() {
       return;
     }
 
-    // 2. Fallback sur les mots du globe
     const foundWord = globeData.find((d: any) => d.country && d.country.toLowerCase().includes(countryName.toLowerCase()));
     if (foundWord) {
       setFocusCoords({ lat: foundWord.lat, lng: foundWord.lng });
@@ -152,7 +149,7 @@ export default function Home() {
 
     return (
       <main className="relative w-full h-screen bg-black overflow-hidden">
-        {/* Globe en arrière-plan */}
+        
         <GlobeComponentDynamic 
           data={globeData} 
           ringsData={ringsData}
@@ -161,8 +158,7 @@ export default function Home() {
         />
 
         <ActivityFeed recentVotes={recentVotes} />
-        
-        {/* Mot #1 du jour (Haut Gauche) */}
+
         {topWords.length > 0 && (
           <div className="fixed top-8 left-8 z-20 bg-black/40 backdrop-blur-md border border-white/10 px-6 py-4 rounded-2xl flex flex-col pointer-events-none shadow-2xl">
             <span className="text-[10px] text-white/50 uppercase tracking-widest mb-1 flex items-center gap-2">
@@ -190,7 +186,6 @@ export default function Home() {
           onSearchCountry={handleSearchCountry} 
         />
 
-        {/* Affichage du mot sélectionné */}
         {selectedWord && (
           <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50 pointer-events-none">
             <div className="bg-black/80 backdrop-blur-md border border-white/20 px-8 py-4 rounded-full shadow-[0_0_30px_rgba(0,255,255,0.2)] flex items-center gap-4 pointer-events-auto relative">

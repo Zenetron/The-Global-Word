@@ -20,8 +20,7 @@ export async function GET(req: Request) {
     rawVotes = globalMockVotes;
   } else {
     try {
-      // Pour le reset par pays, on récupère les votes des dernières 36 heures
-      // pour être sûr d'avoir le "aujourd'hui" de tous les fuseaux horaires.
+
       const thirtySixHoursAgo = new Date(Date.now() - 36 * 60 * 60 * 1000).toISOString();
       
       let query = supabase!.from('votes')
@@ -39,7 +38,6 @@ export async function GET(req: Request) {
     }
   }
 
-  // --- AGRÉGATION ---
   const wordCounts: Record<string, { count: number, firstSeen: string, color: string, distribution: Record<string, number> }> = {};
   const countryWordDistribution: Record<string, Record<string, number>> = {};
   const countryTopWordRaw: Record<string, { text: string, count: number, firstSeen: string, color: string, lat: number, lng: number }> = {};
@@ -49,27 +47,21 @@ export async function GET(req: Request) {
 
   rawVotes.forEach((v: any) => {
     const countryName = normalizeCountryName(v.country);
-    
-    // --- FILTRE PAR MINUIT LOCAL DU PAYS ---
+
     const countryInfo = COUNTRIES.find(c => c.name === countryName);
     const lng = countryInfo?.lng ?? v.lng ?? 0;
     const continent = countryInfo?.continent;
-    
-    // Estimation de l'offset UTC (15 degrés = 1 heure)
-    // On ajoute +1 pour l'Europe qui est politiquement décalée vers l'est par rapport à sa longitude
+
     let offsetHours = Math.round(lng / 15);
     if (continent === 'Europe' && offsetHours < 1) offsetHours = 1;
-    
-    // Calcul du minuit local du pays en utilisant UTC pour éviter les bugs de fuseau horaire du serveur
+
     const countryNow = new Date(now.getTime() + offsetHours * 3600000);
     const y = countryNow.getUTCFullYear();
     const m = countryNow.getUTCMonth();
     const d = countryNow.getUTCDate();
-    
-    // Minuit local exprimé en UTC
+
     const countryMidnightUTC = new Date(Date.UTC(y, m, d) - offsetHours * 3600000);
 
-    // Si le vote est plus vieux que le minuit local du pays, on l'ignore pour les stats du jour
     if (new Date(v.created_at) < countryMidnightUTC) {
       return;
     }
@@ -103,12 +95,8 @@ export async function GET(req: Request) {
     }
   });
 
-  // --- TRADUCTION MASSIVE ---
   const translationMap = await translateBatch(Array.from(allUniqueWords), lang);
 
-  // --- PRÉPARATION DES DONNÉES FINALES ---
-  
-  // 1. Top Words Globaux
   const topWords = Object.entries(wordCounts)
     .sort((a, b) => b[1].count - a[1].count || new Date(a[1].firstSeen).getTime() - new Date(b[1].firstSeen).getTime())
     .slice(0, 10)
@@ -119,7 +107,6 @@ export async function GET(req: Request) {
       distribution: data.distribution
     }));
 
-  // 2. Globe Data
   const maxVotes = Math.max(...Object.values(countryTopWordRaw).map(d => d.count), 1);
   const globeData = Object.entries(countryTopWordRaw).map(([country, data]) => ({
     lat: data.lat,
@@ -130,7 +117,6 @@ export async function GET(req: Request) {
     country
   }));
 
-  // 3. Recent Votes
   const recentVotes = rawVotes.slice(0, 10).map((v: any) => {
     const displayWord = v.word.charAt(0).toUpperCase() + v.word.slice(1).toLowerCase();
     return {
@@ -142,7 +128,6 @@ export async function GET(req: Request) {
     };
   });
 
-  // 4. Country Trends (Sidebar)
   const translatedCountryTrends: Record<string, any[]> = {};
   Object.entries(countryWordDistribution).forEach(([country, words]) => {
     translatedCountryTrends[country] = Object.entries(words)
@@ -154,7 +139,6 @@ export async function GET(req: Request) {
       }));
   });
 
-  // 5. Word Distributions (pour cliquer sur n'importe quel mot du top 50)
   const wordDistributions: Record<string, any> = {};
   Object.entries(wordCounts)
     .sort((a, b) => b[1].count - a[1].count)

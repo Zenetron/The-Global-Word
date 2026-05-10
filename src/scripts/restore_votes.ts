@@ -10,8 +10,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function restore() {
   console.log("🔄 Restauration des votes pour aujourd'hui...");
-  
-  // On met à jour tous les votes des dernières 48h pour qu'ils soient considérés comme "aujourd'hui"
+
   const fortyEightHoursAgo = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
   const now = new Date().toISOString();
 

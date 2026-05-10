@@ -19,7 +19,7 @@ interface ActivityFeedProps {
 
 export default function ActivityFeed({ recentVotes }: ActivityFeedProps) {
   const { t } = useI18n();
-  // On prend simplement les 3 derniers votes réels
+
   const activities = recentVotes.slice(0, 3);
 
   return (

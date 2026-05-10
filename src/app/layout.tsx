@@ -25,11 +25,11 @@ export const metadata: Metadata = {
   openGraph: {
     title: "The Global Word",
     description: "Comment se sent le monde aujourd'hui ?",
-    url: "https://theglobalword.org", // À mettre à jour si vous changez de domaine
+    url: "https://theglobalword.org",
     siteName: "The Global Word",
     images: [
       {
-        url: "/icon.png", // Utilise votre nouveau logo pour les partages
+        url: "/icon.png",
         width: 512,
         height: 512,
       },

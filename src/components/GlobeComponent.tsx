@@ -20,7 +20,7 @@ function GlobeInstance({ data, ringsData, onWordClick }: GlobeProps) {
   const lastUpdateDist = useRef<number>(0);
 
   useEffect(() => {
-    // Mode Ultra Premium : Image claire + Glow
+
     globe
       .globeImageUrl('https://raw.githubusercontent.com/vasturiano/three-globe/master/example/img/earth-blue-marble.jpg')
       .bumpImageUrl('https://raw.githubusercontent.com/vasturiano/three-globe/master/example/img/earth-topology.png')
@@ -28,7 +28,6 @@ function GlobeInstance({ data, ringsData, onWordClick }: GlobeProps) {
       .atmosphereColor('#8000ff') // Halo violet cyber
       .atmosphereAltitude(0.12);
 
-    // Gérer les mots flottants (Labels 3D natifs)
     globe
       .labelsData(data)
       .labelLat((d: any) => d.lat)
@@ -40,7 +39,6 @@ function GlobeInstance({ data, ringsData, onWordClick }: GlobeProps) {
       .labelDotRadius(0.5)
       .labelResolution(3); // Résolution optimisée (3 au lieu de 6) pour 250+ pays
 
-    // Gérer les ondes de choc (Rings)
     globe
       .ringsData(ringsData || [])
       .ringColor((d: any) => (t: number) => `rgba(${d.color === '#00ffff' ? '0,255,255' : '128,0,255'},${1 - t})`)
@@ -48,7 +46,6 @@ function GlobeInstance({ data, ringsData, onWordClick }: GlobeProps) {
       .ringPropagationSpeed(3)
       .ringRepeatPeriod(1000);
 
-    // Ajuster le matériel du globe de base
     const material = globe.globeMaterial() as THREE.MeshPhongMaterial;
     if (material) {
       material.color = new THREE.Color('#ffffff');
@@ -63,8 +60,7 @@ function GlobeInstance({ data, ringsData, onWordClick }: GlobeProps) {
       onClick={(e: any) => {
         e.stopPropagation();
         console.log('Clicked on object:', e.object);
-        
-        // Sometimes ThreeGlobe attaches data to the parent or directly
+
         const data = e.object?.__data || e.object?.parent?.__data || e.object?.userData;
         console.log('Object data:', data);
 
@@ -73,7 +69,7 @@ function GlobeInstance({ data, ringsData, onWordClick }: GlobeProps) {
             onWordClick(data.text, data.country || 'Pays inconnu', data.lat, data.lng);
           }
         } else if (data && data.country) {
-            // si c'est le pays qui est cliqué
+
             console.log('Country clicked:', data.country);
         }
       }}
@@ -104,7 +100,7 @@ export default function GlobeComponent({ data, ringsData, focusCoords, onWordCli
       <Canvas camera={{ position: [0, 0, 300] }}>
         <ambientLight intensity={2} />
         <directionalLight position={[300, 300, 300]} intensity={3} color="#ffffff" />
-        {/* Lumières néon pour illuminer les bords */}
+        
         <pointLight position={[-300, 0, 300]} intensity={20} color="#8000ff" />
         <pointLight position={[300, 0, -300]} intensity={20} color="#00ffff" />
         

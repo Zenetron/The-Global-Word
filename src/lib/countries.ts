@@ -1777,8 +1777,7 @@ export const COUNTRIES: Country[] = [
 
 export const normalizeCountryName = (name: string): string => {
   if (!name) return 'Inconnu';
-  
-  // Mapping pour les noms courants vers le nom français utilisé dans COUNTRIES
+
   const mapping: Record<string, string> = {
     'Netherlands': 'Pays-Bas',
     'The Netherlands': 'Pays-Bas',

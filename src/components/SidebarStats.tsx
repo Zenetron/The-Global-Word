@@ -87,7 +87,7 @@ export default function SidebarStats({ globeData, topWords, wordDistributions, c
       setIsExpanded(true);
     }
   };
-  // Helper pour obtenir le mot top d'une zone
+
   const getTopWordForZone = (name: string) => {
     const isContinent = CONTINENTS.some(c => c.name === name);
 
@@ -117,12 +117,10 @@ export default function SidebarStats({ globeData, topWords, wordDistributions, c
     return { word: top[0], color: top[1].color };
   };
 
-  // Helper pour obtenir le Top 10 d'une zone spécifique
   const getTopTenForZone = (name: string) => {
     const isContinent = CONTINENTS.some(c => c.name === name);
     const countryInfo = !isContinent ? COUNTRIES.find(c => c.name === name || c.nameEn === name) : null;
-    
-    // Si c'est un pays et qu'on a les trends du serveur, on les utilise directement
+
     if (countryInfo && countryTrends) {
       const trends = countryTrends[countryInfo.name] || countryTrends[countryInfo.nameEn] || [];
       if (trends.length > 0) return trends;
@@ -133,7 +131,7 @@ export default function SidebarStats({ globeData, topWords, wordDistributions, c
         const countriesInContinent = COUNTRIES.filter(c => c.continent === name).map(c => c.name.toLowerCase());
         return d.country && countriesInContinent.includes(d.country.toLowerCase());
       } else {
-        // Chercher par nom FR ou EN
+
         return d.country && (
           d.country.toLowerCase() === name.toLowerCase() || 
           (countryInfo && d.country.toLowerCase() === countryInfo.name.toLowerCase()) ||
@@ -159,7 +157,6 @@ export default function SidebarStats({ globeData, topWords, wordDistributions, c
       .map(([word, data]) => ({ word, ...data }));
   };
 
-  // Trier les pays : ceux qui ont des mots en premier
   const sortedCountries = [...COUNTRIES].sort((a, b) => {
     const hasA = globeData.some(d => d.country?.toLowerCase() === a.name.toLowerCase());
     const hasB = globeData.some(d => d.country?.toLowerCase() === b.name.toLowerCase());
@@ -174,10 +171,9 @@ export default function SidebarStats({ globeData, topWords, wordDistributions, c
     return name;
   };
 
-  // Helper pour obtenir les pays où un mot est le plus présent
   const getTopCountriesForWord = (word: string) => {
     const normalized = removeAccents(word);
-    // On cherche d'abord dans wordDistributions (plus complet) sinon dans topWords
+
     const wordInfo = (wordDistributions && wordDistributions[normalized]) || topWords.find(w => w.word === normalized);
     if (!wordInfo || !wordInfo.distribution) return [];
 
@@ -197,7 +193,7 @@ export default function SidebarStats({ globeData, topWords, wordDistributions, c
 
   return (
     <>
-      {/* Bouton Toggle Mobile */}
+      
       <button
         onClick={() => setIsMobileOpen(!isMobileOpen)}
         className="fixed top-6 right-6 z-50 p-3 bg-black/60 backdrop-blur-xl border border-white/10 rounded-full text-white md:hidden shadow-2xl"
@@ -218,7 +214,6 @@ export default function SidebarStats({ globeData, topWords, wordDistributions, c
           </button>
         </div>
 
-        {/* Barre de recherche pays avec autocomplétion */}
         <div className="mb-6 relative z-50">
           <form onSubmit={handleSearch} className="relative">
             <input
@@ -248,7 +243,6 @@ export default function SidebarStats({ globeData, topWords, wordDistributions, c
           )}
         </div>
 
-        {/* Zone Selector */}
         <div className="flex bg-white/5 rounded-lg p-1 mb-6">
           <button
             onClick={() => handleZoneChange('world')}
@@ -273,7 +267,6 @@ export default function SidebarStats({ globeData, topWords, wordDistributions, c
           </button>
         </div>
 
-        {/* Listes de sélection Continents / Pays */}
         {(zone === 'continent' || zone === 'country') && (
           <div className="mb-6 animate-in fade-in slide-in-from-top-2 duration-300">
             <div className="flex items-center justify-between mb-2">
@@ -337,7 +330,6 @@ export default function SidebarStats({ globeData, topWords, wordDistributions, c
           </div>
         )}
 
-        {/* Period Selector */}
         <div className="flex gap-4 border-b border-white/10 mb-6 pb-2">
           {(['today', 'month', 'year'] as Period[]).map((p) => (
             <button

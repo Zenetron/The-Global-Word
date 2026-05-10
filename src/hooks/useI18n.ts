@@ -7,7 +7,7 @@ export function useI18n() {
   const [locale, setLocale] = useState<Locale>('en');
 
   useEffect(() => {
-    // Détection de la langue du navigateur
+
     const browserLang = navigator.language.split('-')[0];
     if (browserLang === 'fr') {
       setLocale('fr');

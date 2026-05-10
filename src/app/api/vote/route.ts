@@ -20,17 +20,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Mot invalide ou inapproprié' }, { status: 400 });
     }
 
-    // Récupérer l'IP
     let ip = req.headers.get('x-forwarded-for') || (req as any).ip || '127.0.0.1';
     if (ip.includes(',')) ip = ip.split(',')[0].trim();
-    
-    // Si on est en local ou sur un réseau privé, on utilise l'IP envoyée par le client si elle existe
+
     const isLocal = ip === '127.0.0.1' || ip === '::1' || ip.startsWith('192.168.') || ip.startsWith('10.') || ip.startsWith('172.');
     if (isLocal && clientIp) {
       ip = clientIp;
     }
-    
-    // 1. Traduction automatique vers l'anglais (pour unifier les stats mondiales)
+
     let translatedWord = word.trim();
     try {
       const translateRes = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=en&dt=t&q=${encodeURIComponent(translatedWord)}`);
@@ -44,7 +41,6 @@ export async function POST(req: NextRequest) {
 
     const ipHash = hashIp(ip);
 
-    // Récupérer la géolocalisation
     const queryIp = (ip === '127.0.0.1' || ip === '::1' || ip.startsWith('192.168.') || ip.startsWith('10.')) ? '8.8.8.8' : ip;
     
     let geoData = { lat: 48.8566, lon: 2.3522, city: 'Paris', country_name: 'France' }; 
@@ -66,7 +62,6 @@ export async function POST(req: NextRequest) {
       console.error('Erreur Géolocalisation', e);
     }
 
-    // Si Supabase n'est pas configuré, on simule le succès
     if (!isSupabaseConfigured()) {
       globalMockVotes.push({
         id: Date.now(),
@@ -81,13 +76,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, mock: true, country: geoData.country_name });
     }
 
-    // 2. Vérifier si l'IP a déjà voté depuis le minuit local du pays détecté
     const countryName = normalizeCountryName(geoData.country_name);
     const countryInfo = COUNTRIES.find(c => c.name === countryName);
     const lng = geoData.lon || countryInfo?.lng || 0;
     const continent = countryInfo?.continent;
-    
-    // Estimation de l'offset UTC
+
     let offsetHours = Math.round(lng / 15);
     if (continent === 'Europe' && offsetHours < 1) offsetHours = 1;
     
@@ -115,7 +108,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Vous avez déjà voté aujourd\'hui.' }, { status: 429 });
     }
 
-    // Enregistrer le vote
     const { error: insertError } = await supabase!
       .from('votes')
       .insert({

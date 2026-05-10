@@ -5,11 +5,9 @@ export async function translateBatch(words: string[], targetLang: string): Promi
 
   const results: Record<string, string> = {};
   const uniqueWords = Array.from(new Set(words.filter(Boolean)));
-  
-  // 1. Initialiser les résultats avec les mots originaux
+
   words.forEach(w => { if(w) results[w] = w; });
 
-  // 2. Filtrer ce qui n'est pas dans le cache
   const wordsToTranslate = uniqueWords.filter(word => {
     const cached = translationCache[targetLang]?.[word.toLowerCase()];
     if (cached) {
@@ -21,7 +19,6 @@ export async function translateBatch(words: string[], targetLang: string): Promi
 
   if (wordsToTranslate.length === 0) return results;
 
-  // 3. Traduire en parallèle avec une limite de 20 à la fois pour éviter d'être bloqué
   const chunks = [];
   const chunkSize = 20;
   for (let i = 0; i < wordsToTranslate.length; i += chunkSize) {
@@ -37,8 +34,7 @@ export async function translateBatch(words: string[], targetLang: string): Promi
           if (data && data[0] && data[0][0] && data[0][0][0]) {
             const translated = data[0][0][0];
             results[word] = translated;
-            
-            // Mettre en cache
+
             if (!translationCache[targetLang]) translationCache[targetLang] = {};
             translationCache[targetLang][word.toLowerCase()] = translated;
           }

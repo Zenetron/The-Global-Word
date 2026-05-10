@@ -2,27 +2,24 @@ export type Locale = 'fr' | 'en';
 
 export const translations = {
   fr: {
-    // General
+
     loading: "Envoi...",
     error: "Une erreur est survenue.",
     success: "Merci !",
     close: "Fermer",
     back: "Retour",
-    
-    // Home / Page
+
     dailyTrend: "Tendance du Jour",
     noWordYet: "Aucun mot pour le moment",
     zoneNotFound: "Zone introuvable",
-    
-    // Submission Form
+
     yourWordToday: "Votre mot aujourd'hui ?",
     exampleWord: "ex: Espoir",
     characters: "caractères",
     submit: "Soumettre",
     alreadyVoted: "Vous avez déjà voté aujourd'hui.",
     wordAdded: "Votre mot a été ajouté au monde.",
-    
-    // Sidebar
+
     searchCountry: "Rechercher un pays...",
     world: "Monde",
     continent: "Cont.",
@@ -43,27 +40,24 @@ export const translations = {
     recentActivity: "Activité Récente",
   },
   en: {
-    // General
+
     loading: "Sending...",
     error: "An error occurred.",
     success: "Thank you!",
     close: "Close",
     back: "Back",
-    
-    // Home / Page
+
     dailyTrend: "Daily Trend",
     noWordYet: "No words yet",
     zoneNotFound: "Zone not found",
-    
-    // Submission Form
+
     yourWordToday: "Your word today?",
     exampleWord: "ex: Hope",
     characters: "characters",
     submit: "Submit",
     alreadyVoted: "You have already voted today.",
     wordAdded: "Your word has been added to the world.",
-    
-    // Sidebar
+
     searchCountry: "Search for a country...",
     world: "World",
     continent: "Cont.",
