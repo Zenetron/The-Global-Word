@@ -8,8 +8,18 @@ export async function translateBatch(words: string[], targetLang: string): Promi
 
   words.forEach(w => { if(w) results[w] = w; });
 
+  const noTranslateWords = ['gp', 'f1', 'ia', 'ai', 'us', 'uk', 'eu'];
+
   const wordsToTranslate = uniqueWords.filter(word => {
-    const cached = translationCache[targetLang]?.[word.toLowerCase()];
+    const wLower = word.toLowerCase();
+    
+    // Exception pour les acronymes qui sont mal traduits par Google
+    if (noTranslateWords.includes(wLower)) {
+      results[word] = word.toUpperCase();
+      return false;
+    }
+
+    const cached = translationCache[targetLang]?.[wLower];
     if (cached) {
       results[word] = cached;
       return false;
