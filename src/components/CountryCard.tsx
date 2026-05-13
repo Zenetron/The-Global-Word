@@ -45,6 +45,13 @@ export default function CountryCard({ word, country, onClose, color = '#00ffff' 
     }
   };
 
+  const getWordSizeClass = (w: string) => {
+    if (w.length > 16) return "text-3xl sm:text-4xl";
+    if (w.length > 10) return "text-4xl sm:text-5xl";
+    if (w.length > 6) return "text-5xl sm:text-6xl";
+    return "text-6xl sm:text-7xl";
+  };
+
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md">
       <div className="relative max-w-sm w-full">
@@ -68,9 +75,9 @@ export default function CountryCard({ word, country, onClose, color = '#00ffff' 
           </div>
 
           {/* Center Word */}
-          <div className="flex-1 flex items-center justify-center z-10 py-8">
+          <div className="flex-1 flex items-center justify-center z-10 py-4 w-full">
             <h1 
-              className="text-6xl sm:text-7xl font-black text-center uppercase tracking-tighter"
+              className={`${getWordSizeClass(word)} font-black text-center uppercase tracking-tighter break-words w-full leading-tight`}
               style={{
                 color: '#fff',
                 textShadow: `0 0 60px ${color}, 0 0 20px ${color}`
