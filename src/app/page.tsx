@@ -39,10 +39,17 @@ export default function Home() {
   };
 
   useEffect(() => {
-    fetchStats();
+    // Optimisation FID : On laisse 500ms à React pour s'hydrater et au DOM pour
+    // être interactif avant de lancer le calcul lourd des 250 mots 3D.
+    const initTimer = setTimeout(() => {
+      fetchStats();
+    }, 500);
 
     const interval = setInterval(fetchStats, 30000);
-    return () => clearInterval(interval);
+    return () => {
+      clearTimeout(initTimer);
+      clearInterval(interval);
+    };
   }, [locale]);
 
   useEffect(() => {

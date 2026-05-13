@@ -21,8 +21,6 @@ function GlobeInstance({ data, ringsData, onWordClick }: GlobeProps) {
 
   useEffect(() => {
     globe
-      .globeImageUrl('https://raw.githubusercontent.com/vasturiano/three-globe/master/example/img/earth-blue-marble.jpg')
-      .bumpImageUrl('https://raw.githubusercontent.com/vasturiano/three-globe/master/example/img/earth-topology.png')
       .showAtmosphere(true)
       .atmosphereColor('#8000ff') // Halo violet cyber
       .atmosphereAltitude(0.12);
@@ -33,6 +31,14 @@ function GlobeInstance({ data, ringsData, onWordClick }: GlobeProps) {
       material.emissive = new THREE.Color('#111111');
       material.emissiveIntensity = 0.5;
     }
+
+    // Optimisation FID : On décale le chargement et le décodage des textures (très lourdes)
+    // pour ne pas bloquer le thread principal au moment où l'utilisateur arrive sur la page.
+    setTimeout(() => {
+      globe
+        .globeImageUrl('https://raw.githubusercontent.com/vasturiano/three-globe/master/example/img/earth-blue-marble.jpg')
+        .bumpImageUrl('https://raw.githubusercontent.com/vasturiano/three-globe/master/example/img/earth-topology.png');
+    }, 800);
   }, [globe]);
 
   useEffect(() => {
