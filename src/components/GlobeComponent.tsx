@@ -20,7 +20,6 @@ function GlobeInstance({ data, ringsData, onWordClick }: GlobeProps) {
   const lastUpdateDist = useRef<number>(0);
 
   useEffect(() => {
-
     globe
       .globeImageUrl('https://raw.githubusercontent.com/vasturiano/three-globe/master/example/img/earth-blue-marble.jpg')
       .bumpImageUrl('https://raw.githubusercontent.com/vasturiano/three-globe/master/example/img/earth-topology.png')
@@ -28,6 +27,15 @@ function GlobeInstance({ data, ringsData, onWordClick }: GlobeProps) {
       .atmosphereColor('#8000ff') // Halo violet cyber
       .atmosphereAltitude(0.12);
 
+    const material = globe.globeMaterial() as THREE.MeshPhongMaterial;
+    if (material) {
+      material.color = new THREE.Color('#ffffff');
+      material.emissive = new THREE.Color('#111111');
+      material.emissiveIntensity = 0.5;
+    }
+  }, [globe]);
+
+  useEffect(() => {
     globe
       .labelsData(data)
       .labelLat((d: any) => d.lat)
@@ -38,21 +46,16 @@ function GlobeInstance({ data, ringsData, onWordClick }: GlobeProps) {
       .labelSize((d: any) => d.size * 1.5 || 1.5)
       .labelDotRadius(0.5)
       .labelResolution(3); // Résolution optimisée (3 au lieu de 6) pour 250+ pays
+  }, [globe, data]);
 
+  useEffect(() => {
     globe
       .ringsData(ringsData || [])
       .ringColor((d: any) => (t: number) => `rgba(${d.color === '#00ffff' ? '0,255,255' : '128,0,255'},${1 - t})`)
       .ringMaxRadius(15)
       .ringPropagationSpeed(3)
       .ringRepeatPeriod(1000);
-
-    const material = globe.globeMaterial() as THREE.MeshPhongMaterial;
-    if (material) {
-      material.color = new THREE.Color('#ffffff');
-      material.emissive = new THREE.Color('#111111');
-      material.emissiveIntensity = 0.5;
-    }
-  }, [globe, data, ringsData]);
+  }, [globe, ringsData]);
 
   return (
     <primitive 

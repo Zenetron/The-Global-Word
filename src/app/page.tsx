@@ -67,8 +67,9 @@ export default function Home() {
             setRingsData(prev => prev.filter(r => r !== newRing));
           }, 4000);
           
-          // Rafraîchir doucement les stats si besoin
-          fetchStats();
+          // NOTE: On ne fait PLUS de fetchStats() ici.
+          // Le globe principal se mettra à jour naturellement toutes les 30 secondes.
+          // Appeler fetchStats à chaque vote bloquait le thread principal (mauvais score INP).
         }
       })
       .subscribe();
