@@ -28,7 +28,7 @@ export default function CountryCard({ word, country, onClose, color = '#00ffff' 
       if (navigator.share && navigator.canShare({ files: [file] })) {
         await navigator.share({
           title: `The Global Word - ${country}`,
-          text: `Aujourd'hui, ${country} ressent : ${word}. Et vous ?`,
+          text: `Le mot du jour (${country}) est : "${word}". Quel sera le vôtre ?`,
           url: 'https://theglobalword.org',
           files: [file],
         });
