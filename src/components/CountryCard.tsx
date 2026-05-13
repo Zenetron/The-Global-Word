@@ -45,11 +45,12 @@ export default function CountryCard({ word, country, onClose, color = '#00ffff' 
     }
   };
 
-  const getWordSizeClass = (w: string) => {
-    if (w.length > 16) return "text-3xl sm:text-4xl";
-    if (w.length > 10) return "text-4xl sm:text-5xl";
-    if (w.length > 6) return "text-5xl sm:text-6xl";
-    return "text-6xl sm:text-7xl";
+  // On calcule une taille de police dynamique pour que ça tienne sur 1 seule ligne
+  const getDynamicFontSize = (w: string) => {
+    // Largeur dispo env. 300px. Ratio largeur/hauteur d'un caractère = ~0.6
+    // fontSize * 0.6 * w.length = 300 => fontSize = 500 / w.length
+    const size = 500 / Math.max(5, w.length);
+    return `${Math.min(72, size)}px`;
   };
 
   return (
@@ -77,8 +78,9 @@ export default function CountryCard({ word, country, onClose, color = '#00ffff' 
           {/* Center Word */}
           <div className="flex-1 flex items-center justify-center z-10 py-4 w-full">
             <h1 
-              className={`${getWordSizeClass(word)} font-black text-center uppercase tracking-tighter break-words w-full leading-tight`}
+              className="font-black text-center uppercase tracking-tighter whitespace-nowrap w-full"
               style={{
+                fontSize: getDynamicFontSize(word),
                 color: '#fff',
                 textShadow: `0 0 60px ${color}, 0 0 20px ${color}`
               }}
