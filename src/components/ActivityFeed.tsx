@@ -23,7 +23,7 @@ export default function ActivityFeed({ recentVotes }: ActivityFeedProps) {
   const activities = recentVotes.slice(0, 3);
 
   return (
-    <div className="fixed bottom-8 left-8 z-20 flex flex-col gap-2 max-w-[250px] pointer-events-none hidden md:flex">
+    <div className="fixed bottom-4 left-4 md:bottom-8 md:left-8 z-20 flex flex-col gap-2 max-w-[200px] md:max-w-[250px] pointer-events-none">
       <h4 className="text-[10px] text-white/30 uppercase tracking-[0.2em] font-bold mb-1 flex items-center gap-2 px-2">
         <div className="w-1.5 h-1.5 rounded-full bg-neon-cyan animate-pulse" /> {t('recentActivity')}
       </h4>
