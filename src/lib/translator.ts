@@ -19,6 +19,13 @@ export async function translateBatch(words: string[], targetLang: string): Promi
       return false;
     }
 
+    // Exception pour les noms propres pour éviter les amalgames de traduction
+    const properNouns = ['sinner'];
+    if (properNouns.includes(wLower)) {
+      results[word] = word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+      return false;
+    }
+
     const cached = translationCache[targetLang]?.[wLower];
     if (cached) {
       results[word] = cached;
