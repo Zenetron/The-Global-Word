@@ -101,9 +101,6 @@ export async function GET() {
   // Scrape each country's Google Trends daily RSS feed
   for (const [geo, targetCountry] of Object.entries(GEO_MAPPINGS)) {
     try {
-      // Keep Jannik Sinner in Italy as explicitly required by the editorial curation
-      if (geo === 'IT') continue;
-
       const url = `https://trends.google.com/trending/rss?geo=${geo}`;
       const response = await fetch(url, {
         headers: {
