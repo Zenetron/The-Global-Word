@@ -16,32 +16,34 @@ interface GlobeProps {
 }
 
 function GlobeInstance({ data, ringsData, onWordClick }: GlobeProps) {
-  const [globe] = useState(() => new ThreeGlobe());
-  const lastUpdateDist = useRef<number>(0);
+  const [globe, setGlobe] = useState<ThreeGlobe | null>(null);
 
   useEffect(() => {
-    globe
+    const instance = new ThreeGlobe();
+    instance
       .showAtmosphere(true)
       .atmosphereColor('#8000ff') // Halo violet cyber
       .atmosphereAltitude(0.12);
 
-    const material = globe.globeMaterial() as THREE.MeshPhongMaterial;
+    const material = instance.globeMaterial() as THREE.MeshPhongMaterial;
     if (material) {
       material.color = new THREE.Color('#ffffff');
       material.emissive = new THREE.Color('#111111');
       material.emissiveIntensity = 0.5;
     }
 
-    // Optimisation FID : On décale le chargement et le décodage des textures (très lourdes)
-    // pour ne pas bloquer le thread principal au moment où l'utilisateur arrive sur la page.
+    // Defer texture loading/decoding to avoid blocking initial user interaction
     setTimeout(() => {
-      globe
+      instance
         .globeImageUrl('https://raw.githubusercontent.com/vasturiano/three-globe/master/example/img/earth-blue-marble.jpg')
         .bumpImageUrl('https://raw.githubusercontent.com/vasturiano/three-globe/master/example/img/earth-topology.png');
     }, 800);
-  }, [globe]);
+
+    setGlobe(instance);
+  }, []);
 
   useEffect(() => {
+    if (!globe) return;
     globe
       .labelsData(data)
       .labelLat((d: any) => d.lat)
@@ -55,6 +57,7 @@ function GlobeInstance({ data, ringsData, onWordClick }: GlobeProps) {
   }, [globe, data]);
 
   useEffect(() => {
+    if (!globe) return;
     globe
       .ringsData(ringsData || [])
       .ringColor((d: any) => (t: number) => `rgba(${d.color === '#00ffff' ? '0,255,255' : '128,0,255'},${1 - t})`)
@@ -62,6 +65,8 @@ function GlobeInstance({ data, ringsData, onWordClick }: GlobeProps) {
       .ringPropagationSpeed(3)
       .ringRepeatPeriod(1000);
   }, [globe, ringsData]);
+
+  if (!globe) return null;
 
   return (
     <primitive 

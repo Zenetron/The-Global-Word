@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import dynamic from 'next/dynamic';
 import SubmissionForm from '@/components/SubmissionForm';
 import SidebarStats from '@/components/SidebarStats';
@@ -15,6 +15,7 @@ const GlobeComponentDynamic = dynamic(() => import('@/components/GlobeComponent'
 
 export default function Home() {
   const { t, locale } = useI18n();
+  const [isPending, startTransition] = useTransition();
   const [globeData, setGlobeData] = useState<any[]>([]);
   const [topWords, setTopWords] = useState<any[]>([]);
   const [recentVotes, setRecentVotes] = useState<any[]>([]);
@@ -28,11 +29,13 @@ export default function Home() {
     try {
       const res = await fetch(`/api/stats?t=${Date.now()}&lang=${locale}`);
       const data = await res.json();
-      if (data.globeData) setGlobeData(data.globeData);
-      if (data.topWords) setTopWords(data.topWords);
-      if (data.recentVotes) setRecentVotes(data.recentVotes);
-      if (data.countryTrends) setCountryTrends(data.countryTrends);
-      if (data.wordDistributions) setWordDistributions(data.wordDistributions);
+      startTransition(() => {
+        if (data.globeData) setGlobeData(data.globeData);
+        if (data.topWords) setTopWords(data.topWords);
+        if (data.recentVotes) setRecentVotes(data.recentVotes);
+        if (data.countryTrends) setCountryTrends(data.countryTrends);
+        if (data.wordDistributions) setWordDistributions(data.wordDistributions);
+      });
     } catch (e) {
       console.error(t('error'), e);
     }
