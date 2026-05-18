@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Globe, MapPin, Map, Search, ChevronDown } from 'lucide-react';
 import { COUNTRIES, CONTINENTS } from '@/lib/countries';
@@ -88,33 +88,84 @@ export default function SidebarStats({ globeData, topWords, wordDistributions, c
     }
   };
 
-  const getTopWordForZone = (name: string) => {
-    const isContinent = CONTINENTS.some(c => c.name === name);
+  // Pre-calculate active countries set for O(1) lookup in sorting
+  const sortedCountries = useMemo(() => {
+    const activeCountries = new Set(
+      globeData.filter(d => d.country).map(d => d.country.toLowerCase())
+    );
+    return [...COUNTRIES].sort((a, b) => {
+      const hasA = activeCountries.has(a.name.toLowerCase());
+      const hasB = activeCountries.has(b.name.toLowerCase());
+      if (hasA && !hasB) return -1;
+      if (!hasA && hasB) return 1;
+      return 0;
+    });
+  }, [globeData]);
 
-    const zoneWords = globeData.filter(d => {
+  // Group globeData by country for O(1) lookup during zone computations
+  const wordsByCountry = useMemo(() => {
+    const cache: Record<string, any[]> = {};
+    globeData.forEach(d => {
+      if (d.country) {
+        const key = d.country.toLowerCase();
+        if (!cache[key]) cache[key] = [];
+        cache[key].push(d);
+      }
+    });
+    return cache;
+  }, [globeData]);
+
+  // Pre-calculate top words for all zones to avoid doing it on key press rerenders
+  const topWordsByZone = useMemo(() => {
+    const cache: Record<string, { word: string; color: string } | null> = {};
+
+    const computeTopWord = (name: string, isContinent: boolean) => {
+      let zoneWords: any[] = [];
       if (!isContinent) {
-        return d.country && d.country.toLowerCase() === name.toLowerCase();
+        zoneWords = wordsByCountry[name.toLowerCase()] || [];
       } else {
         const countriesInContinent = COUNTRIES.filter(c => c.continent === name).map(c => c.name.toLowerCase());
-        return d.country && countriesInContinent.includes(d.country.toLowerCase());
+        countriesInContinent.forEach(cName => {
+          if (wordsByCountry[cName]) {
+            zoneWords.push(...wordsByCountry[cName]);
+          }
+        });
       }
+
+      if (zoneWords.length === 0) return null;
+
+      const counts: Record<string, { count: number; color: string; firstSeen: number }> = {};
+      zoneWords.forEach(w => {
+        if (!counts[w.text]) {
+          counts[w.text] = { 
+            count: 0, 
+            color: w.color, 
+            firstSeen: w.created_at ? new Date(w.created_at).getTime() : Date.now() 
+          };
+        }
+        counts[w.text].count++;
+      });
+
+      const top = Object.entries(counts).sort((a, b) => {
+        if (b[1].count !== a[1].count) return b[1].count - a[1].count;
+        return a[1].firstSeen - b[1].firstSeen;
+      })[0];
+      return { word: top[0], color: top[1].color };
+    };
+
+    CONTINENTS.forEach(c => {
+      cache[c.name] = computeTopWord(c.name, true);
     });
 
-    if (zoneWords.length === 0) return null;
-
-    const counts: Record<string, { count: number, color: string, firstSeen: string }> = {};
-    zoneWords.forEach(w => {
-      if (!counts[w.text]) {
-        counts[w.text] = { count: 0, color: w.color, firstSeen: w.created_at || new Date().toISOString() };
-      }
-      counts[w.text].count++;
+    sortedCountries.slice(0, 20).forEach(c => {
+      cache[c.name] = computeTopWord(c.name, false);
     });
 
-    const top = Object.entries(counts).sort((a, b) => {
-      if (b[1].count !== a[1].count) return b[1].count - a[1].count;
-      return new Date(a[1].firstSeen).getTime() - new Date(b[1].firstSeen).getTime();
-    })[0];
-    return { word: top[0], color: top[1].color };
+    return cache;
+  }, [wordsByCountry, sortedCountries]);
+
+  const getTopWordForZone = (name: string) => {
+    return topWordsByZone[name] || null;
   };
 
   const getTopTenForZone = (name: string) => {
@@ -126,24 +177,39 @@ export default function SidebarStats({ globeData, topWords, wordDistributions, c
       if (trends.length > 0) return trends;
     }
 
-    const zoneWords = globeData.filter(d => {
-      if (isContinent) {
-        const countriesInContinent = COUNTRIES.filter(c => c.continent === name).map(c => c.name.toLowerCase());
-        return d.country && countriesInContinent.includes(d.country.toLowerCase());
-      } else {
-
-        return d.country && (
-          d.country.toLowerCase() === name.toLowerCase() || 
-          (countryInfo && d.country.toLowerCase() === countryInfo.name.toLowerCase()) ||
-          (countryInfo && d.country.toLowerCase() === countryInfo.nameEn.toLowerCase())
-        );
+    let zoneWords: any[] = [];
+    if (isContinent) {
+      const countriesInContinent = COUNTRIES.filter(c => c.continent === name).map(c => c.name.toLowerCase());
+      countriesInContinent.forEach(cName => {
+        if (wordsByCountry[cName]) {
+          zoneWords.push(...wordsByCountry[cName]);
+        }
+      });
+    } else {
+      const cName = name.toLowerCase();
+      if (wordsByCountry[cName]) {
+        zoneWords.push(...wordsByCountry[cName]);
       }
-    });
+      if (countryInfo) {
+        const cNameAlt1 = countryInfo.name.toLowerCase();
+        const cNameAlt2 = countryInfo.nameEn.toLowerCase();
+        if (cNameAlt1 !== cName && wordsByCountry[cNameAlt1]) {
+          zoneWords.push(...wordsByCountry[cNameAlt1]);
+        }
+        if (cNameAlt2 !== cName && cNameAlt2 !== cNameAlt1 && wordsByCountry[cNameAlt2]) {
+          zoneWords.push(...wordsByCountry[cNameAlt2]);
+        }
+      }
+    }
 
-    const counts: Record<string, { count: number, color: string, firstSeen: string }> = {};
+    const counts: Record<string, { count: number; color: string; firstSeen: number }> = {};
     zoneWords.forEach(w => {
       if (!counts[w.text]) {
-        counts[w.text] = { count: 0, color: w.color, firstSeen: w.created_at || new Date().toISOString() };
+        counts[w.text] = { 
+          count: 0, 
+          color: w.color, 
+          firstSeen: w.created_at ? new Date(w.created_at).getTime() : Date.now() 
+        };
       }
       counts[w.text].count++;
     });
@@ -151,19 +217,11 @@ export default function SidebarStats({ globeData, topWords, wordDistributions, c
     return Object.entries(counts)
       .sort((a, b) => {
         if (b[1].count !== a[1].count) return b[1].count - a[1].count;
-        return new Date(a[1].firstSeen).getTime() - new Date(b[1].firstSeen).getTime();
+        return a[1].firstSeen - b[1].firstSeen;
       })
       .slice(0, 10)
       .map(([word, data]) => ({ word, ...data }));
   };
-
-  const sortedCountries = [...COUNTRIES].sort((a, b) => {
-    const hasA = globeData.some(d => d.country?.toLowerCase() === a.name.toLowerCase());
-    const hasB = globeData.some(d => d.country?.toLowerCase() === b.name.toLowerCase());
-    if (hasA && !hasB) return -1;
-    if (!hasA && hasB) return 1;
-    return 0;
-  });
 
   const getDisplayCountry = (name: string) => {
     const country = COUNTRIES.find(c => c.name === name || c.nameEn === name);
@@ -183,9 +241,15 @@ export default function SidebarStats({ globeData, topWords, wordDistributions, c
       .map(([country, count]) => ({ country, count, color: wordInfo.color }));
   };
 
-  const displayWords = selectedWordFilter
-    ? getTopCountriesForWord(selectedWordFilter)
-    : (selectedSubZone ? getTopTenForZone(selectedSubZone) : (zone === 'world' ? topWords : []));
+  const displayWords = useMemo(() => {
+    if (selectedWordFilter) {
+      return getTopCountriesForWord(selectedWordFilter);
+    }
+    if (selectedSubZone) {
+      return getTopTenForZone(selectedSubZone);
+    }
+    return zone === 'world' ? topWords : [];
+  }, [selectedWordFilter, selectedSubZone, zone, topWords, wordsByCountry, countryTrends, wordDistributions]);
 
   const topTitle = selectedWordFilter
     ? `${t('country')} - "${selectedWordFilter}"`
