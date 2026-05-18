@@ -67,6 +67,10 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
+      <head>
+        <link rel="preload" href="/earth-blue-marble.jpg" as="image" />
+        <link rel="preload" href="/earth-topology.png" as="image" />
+      </head>
       <body className="min-h-full flex flex-col">
         {children}
         <Analytics />

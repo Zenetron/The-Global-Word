@@ -32,12 +32,10 @@ function GlobeInstance({ data, ringsData, onWordClick }: GlobeProps) {
       material.emissiveIntensity = 0.5;
     }
 
-    // Defer texture loading/decoding to avoid blocking initial user interaction
-    setTimeout(() => {
-      instance
-        .globeImageUrl('https://raw.githubusercontent.com/vasturiano/three-globe/master/example/img/earth-blue-marble.jpg')
-        .bumpImageUrl('https://raw.githubusercontent.com/vasturiano/three-globe/master/example/img/earth-topology.png');
-    }, 800);
+    // Load preloaded local textures immediately for maximum LCP performance
+    instance
+      .globeImageUrl('/earth-blue-marble.jpg')
+      .bumpImageUrl('/earth-topology.png');
 
     setGlobe(instance);
   }, []);
