@@ -22,16 +22,17 @@ const NEWS_EVENTS = {
 const GENERAL_EVENTS = ["activisme", "climat", "économie", "santé", "sport", "culture", "innovation"];
 
 async function resetAllGlobeData() {
-  console.log("Preparing ultra-premium optimized data for all countries...");
+  console.log("Preparing ultra-premium optimized data with monday and coffee for all countries...");
   
   const votes = [];
+  let otherCountryIndex = 0;
   
   for (const country of COUNTRIES) {
     if (country.name === 'États-Unis' || country.nameEn === 'United States') {
        const topics = [
          { word: "grève", count: 8 },
-         { word: "tech", count: 3 },
-         { word: "ia", count: 1 }
+         { word: "monday", count: 4 },
+         { word: "coffee", count: 3 }
        ];
        for (const t of topics) {
          for (let i = 0; i < t.count; i++) {
@@ -70,17 +71,16 @@ async function resetAllGlobeData() {
     }
 
     // Default for other countries: exactly 3 votes per country to fit perfectly in 1000 limit
+    // Alternating between "monday" and "coffee" as local Top 1 to compile them into global Top 1 & 2!
     const eventsPool = NEWS_EVENTS[country.continent] || GENERAL_EVENTS;
-    
     const topic1 = eventsPool[Math.floor(Math.random() * eventsPool.length)];
-    let topic2 = eventsPool[Math.floor(Math.random() * eventsPool.length)];
-    while (topic1 === topic2 && eventsPool.length > 1) {
-      topic2 = eventsPool[Math.floor(Math.random() * eventsPool.length)];
-    }
+    
+    const mainWord = otherCountryIndex % 2 === 0 ? "monday" : "coffee";
+    otherCountryIndex++;
 
     const topics = [
-      { word: topic1, count: 2 },
-      { word: topic2, count: 1 }
+      { word: mainWord, count: 2 },
+      { word: topic1, count: 1 }
     ];
 
     for (const t of topics) {
