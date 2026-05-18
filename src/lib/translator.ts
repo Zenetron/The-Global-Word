@@ -20,7 +20,7 @@ export async function translateBatch(words: string[], targetLang: string): Promi
     }
 
     // Exception pour les noms propres pour éviter les amalgames de traduction
-    const properNouns = ['sinner'];
+    const properNouns = ['sinner', 'macron'];
     if (properNouns.includes(wLower)) {
       results[word] = word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
       return false;

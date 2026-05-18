@@ -38,6 +38,9 @@ export const translations = {
     trends: "Tendances",
     globalVision: "Visualisation globale des émotions",
     recentActivity: "Activité Récente",
+    shareCard: "Partager cette carte",
+    creating: "Création...",
+    shareMessage: "Le mot du jour (%country%) est : \"%word%\". Quel est le vôtre ?",
   },
   en: {
 
@@ -76,5 +79,8 @@ export const translations = {
     trends: "Trends",
     globalVision: "Global visualization of emotions",
     recentActivity: "Recent Activity",
+    shareCard: "Share this card",
+    creating: "Creating...",
+    shareMessage: "The word of the day (%country%) is: \"%word%\". What is yours?",
   }
 };

@@ -3,6 +3,7 @@
 import { useRef, useState } from 'react';
 import { toPng } from 'html-to-image';
 import { Share2, X } from 'lucide-react';
+import { useI18n } from '@/hooks/useI18n';
 
 interface CountryCardProps {
   word: string;
@@ -12,6 +13,7 @@ interface CountryCardProps {
 }
 
 export default function CountryCard({ word, country, onClose, color = '#00ffff' }: CountryCardProps) {
+  const { t } = useI18n();
   const cardRef = useRef<HTMLDivElement>(null);
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -28,7 +30,7 @@ export default function CountryCard({ word, country, onClose, color = '#00ffff' 
       if (navigator.share && navigator.canShare({ files: [file] })) {
         await navigator.share({
           title: `The Global Word - ${country}`,
-          text: `Le mot du jour (${country}) est : "${word}". Quel est le vôtre ?`,
+          text: t('shareMessage').replace('%country%', country).replace('%word%', word),
           url: 'https://theglobalword.org',
           files: [file],
         });
@@ -67,7 +69,7 @@ export default function CountryCard({ word, country, onClose, color = '#00ffff' 
           {/* Header */}
           <div className="flex justify-between items-start z-10">
             <div>
-              <p className="text-white/50 text-[10px] font-bold tracking-[0.2em] uppercase mb-1">Aujourd'hui</p>
+              <p className="text-white/50 text-[10px] font-bold tracking-[0.2em] uppercase mb-1">{t('today')}</p>
               <h2 className="text-2xl font-black text-white tracking-tight leading-none">{country}</h2>
             </div>
             <div className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center bg-white/5 backdrop-blur-sm">
@@ -127,11 +129,11 @@ export default function CountryCard({ word, country, onClose, color = '#00ffff' 
             }}
           >
             {isGenerating ? (
-              <span className="animate-pulse">Création...</span>
+              <span className="animate-pulse">{t('creating')}</span>
             ) : (
               <>
                 <Share2 size={18} />
-                Partager cette carte
+                {t('shareCard')}
               </>
             )}
           </button>
