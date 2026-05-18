@@ -15,13 +15,20 @@ interface GlobeProps {
   onWordClick?: (word: string, country: string, lat?: number, lng?: number) => void;
 }
 
-function GlobeInstance({ data, ringsData, onWordClick }: GlobeProps) {
+interface GlobeInstanceProps {
+  data: any[];
+  ringsData?: any[];
+  onWordClick?: (word: string, country: string, lat?: number, lng?: number) => void;
+  isMobile: boolean;
+}
+
+function GlobeInstance({ data, ringsData, onWordClick, isMobile }: GlobeInstanceProps) {
   const [globe, setGlobe] = useState<ThreeGlobe | null>(null);
 
   useEffect(() => {
     const instance = new ThreeGlobe();
     instance
-      .showAtmosphere(true)
+      .showAtmosphere(!isMobile) // Disable glow on mobile to save fragment shading
       .atmosphereColor('#8000ff') // Halo violet cyber
       .atmosphereAltitude(0.12);
 
@@ -38,7 +45,7 @@ function GlobeInstance({ data, ringsData, onWordClick }: GlobeProps) {
       .bumpImageUrl('/earth-topology.png');
 
     setGlobe(instance);
-  }, []);
+  }, [isMobile]);
 
   useEffect(() => {
     if (!globe) return;
@@ -51,8 +58,8 @@ function GlobeInstance({ data, ringsData, onWordClick }: GlobeProps) {
       .labelAltitude(0.05)
       .labelSize((d: any) => d.size * 1.5 || 1.5)
       .labelDotRadius(0.5)
-      .labelResolution(3); // Résolution optimisée (3 au lieu de 6) pour 250+ pays
-  }, [globe, data]);
+      .labelResolution(isMobile ? 2 : 3); // Lower resolution for mobile to save CPU geometry generation
+  }, [globe, data, isMobile]);
 
   useEffect(() => {
     if (!globe) return;
@@ -91,6 +98,16 @@ function GlobeInstance({ data, ringsData, onWordClick }: GlobeProps) {
 
 export default function GlobeComponent({ data, ringsData, focusCoords, onWordClick }: GlobeProps) {
   const controlsRef = useRef<any>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   useEffect(() => {
     if (focusCoords && controlsRef.current) {
@@ -109,14 +126,17 @@ export default function GlobeComponent({ data, ringsData, focusCoords, onWordCli
 
   return (
     <div className="absolute inset-0 z-0">
-      <Canvas camera={{ position: [0, 0, 300] }}>
+      <Canvas 
+        camera={{ position: [0, 0, 300] }}
+        dpr={isMobile ? 1 : [1, 1.5]} // Limit pixel ratio on mobile (1x instead of high-density) to save fragment shader workload
+      >
         <ambientLight intensity={2} />
         <directionalLight position={[300, 300, 300]} intensity={3} color="#ffffff" />
         
         <pointLight position={[-300, 0, 300]} intensity={20} color="#8000ff" />
         <pointLight position={[300, 0, -300]} intensity={20} color="#00ffff" />
         
-        <GlobeInstance data={data} ringsData={ringsData} onWordClick={onWordClick} />
+        <GlobeInstance data={data} ringsData={ringsData} onWordClick={onWordClick} isMobile={isMobile} />
         
         <OrbitControls
           ref={controlsRef}
