@@ -71,7 +71,8 @@ async function resetAllGlobeData() {
     }
 
     // Default for other countries: exactly 3 votes per country to fit perfectly in 1000 limit
-    // Alternating between "monday" and "coffee" as local Top 1 to compile them into global Top 1 & 2!
+    // The news topic has 3 votes (Top 1 local), and monday/coffee has 2 votes (Top 2 local).
+    // This ensures every country shows actual news, but monday/coffee accumulate the most votes globally!
     const eventsPool = NEWS_EVENTS[country.continent] || GENERAL_EVENTS;
     const topic1 = eventsPool[Math.floor(Math.random() * eventsPool.length)];
     
@@ -79,8 +80,8 @@ async function resetAllGlobeData() {
     otherCountryIndex++;
 
     const topics = [
-      { word: mainWord, count: 2 },
-      { word: topic1, count: 1 }
+      { word: topic1, count: 2 },
+      { word: mainWord, count: 1 }
     ];
 
     for (const t of topics) {
