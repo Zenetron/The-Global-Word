@@ -6,7 +6,7 @@ import SubmissionForm from '@/components/SubmissionForm';
 import SidebarStats from '@/components/SidebarStats';
 import ActivityFeed from '@/components/ActivityFeed';
 import { COUNTRIES, CONTINENTS } from '@/lib/countries';
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '@/lib/supabase';
 import CountryCard from '@/components/CountryCard';
 
 import { useI18n } from '@/hooks/useI18n';
@@ -24,10 +24,63 @@ export default function Home() {
   const [ringsData, setRingsData] = useState<any[]>([]);
   const [focusCoords, setFocusCoords] = useState<{lat: number, lng: number, distance?: number} | null>(null);
   const [selectedWord, setSelectedWord] = useState<{ word: string, country: string, color?: string } | null>(null);
+  const [user, setUser] = useState<any>(null);
 
-  const fetchStats = async () => {
+  // Écouter les changements d'état d'authentification Reddit
+  useEffect(() => {
+    if (!supabase) return;
+
+    // Récupérer la session actuelle
+    const initSession = async () => {
+      try {
+        const { data }: any = await supabase.auth.getSession();
+        setUser(data?.session?.user ?? null);
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    initSession();
+
+    // S'abonner aux changements d'état (connexion/déconnexion)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  const handleLoginGoogle = async () => {
+    if (!supabase) return;
     try {
-      const res = await fetch(`/api/stats?t=${Date.now()}&lang=${locale}`);
+      await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin
+        }
+      });
+    } catch (e) {
+      console.error('Error logging in with Google:', e);
+    }
+  };
+
+  const handleLogout = async () => {
+    if (!supabase) return;
+    try {
+      await supabase.auth.signOut();
+      setUser(null);
+    } catch (e) {
+      console.error('Error logging out:', e);
+    }
+  };
+
+  const fetchStats = async (bypassCache = false) => {
+    try {
+      const url = bypassCache 
+        ? `/api/stats?lang=${locale}&bypass=true` 
+        : `/api/stats?lang=${locale}`;
+      const res = await fetch(url);
       const data = await res.json();
       startTransition(() => {
         if (data.globeData) setGlobeData(data.globeData);
@@ -56,15 +109,11 @@ export default function Home() {
   }, [locale]);
 
   useEffect(() => {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    if (!supabaseUrl || !supabaseKey) return;
-
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    if (!supabase) return;
     
     const channel = supabase
       .channel('public:votes')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'votes' }, (payload) => {
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'votes' }, (payload: any) => {
         const vote = payload.new;
         const countryInfo = COUNTRIES.find(c => c.name === vote.country);
         if (countryInfo) {
@@ -76,10 +125,6 @@ export default function Home() {
           setTimeout(() => {
             setRingsData(prev => prev.filter(r => r !== newRing));
           }, 4000);
-          
-          // NOTE: On ne fait PLUS de fetchStats() ici.
-          // Le globe principal se mettra à jour naturellement toutes les 30 secondes.
-          // Appeler fetchStats à chaque vote bloquait le thread principal (mauvais score INP).
         }
       })
       .subscribe();
@@ -91,7 +136,6 @@ export default function Home() {
 
   const handleSubmission = async (word: string) => {
     try {
-
       let publicIp = null;
       try {
         const ipRes = await fetch('https://api.ipify.org?format=json');
@@ -100,7 +144,6 @@ export default function Home() {
           publicIp = ipData.ip;
         }
       } catch (e) {
-
         try {
           const ipRes2 = await fetch('https://ipapi.co/json/');
           if (ipRes2.ok) {
@@ -112,16 +155,29 @@ export default function Home() {
         }
       }
 
+      // Récupérer le JWT d'authentification pour sécuriser le vote
+      let session = null;
+      if (supabase) {
+        const result = await supabase.auth.getSession();
+        session = result.data?.session;
+      }
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json'
+      };
+      if (session) {
+        headers['Authorization'] = `Bearer ${session.access_token}`;
+      }
+
       const res = await fetch('/api/vote', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ word, clientIp: publicIp }),
       });
       
       if (res.ok) {
         const result = await res.json();
 
-        await fetchStats();
+        await fetchStats(true);
 
         const country = COUNTRIES.find(c => c.name === result.country);
         if (country) {
@@ -225,7 +281,12 @@ export default function Home() {
           </div>
         )}
 
-        <SubmissionForm onSubmit={handleSubmission} />
+        <SubmissionForm 
+          onSubmit={handleSubmission} 
+          user={user}
+          onLoginGoogle={handleLoginGoogle}
+          onLogout={handleLogout}
+        />
         <SidebarStats 
           globeData={globeData} 
           topWords={topWords} 

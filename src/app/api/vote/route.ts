@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { globalMockVotes } from '@/lib/mockData';
 import crypto from 'crypto';
+import { createClient } from '@supabase/supabase-js';
 
 function hashIp(ip: string) {
   return crypto.createHash('sha256').update(ip + process.env.IP_SALT || 'salt').digest('hex');
@@ -62,7 +63,31 @@ export async function POST(req: NextRequest) {
       console.error('Erreur Géolocalisation', e);
     }
 
+    // Récupérer le token de session
+    const authHeader = req.headers.get('Authorization');
+    const token = authHeader?.split(' ')[1];
+    let user = null;
+    let userEmail = null;
+
+    if (token && isSupabaseConfigured()) {
+      try {
+        const { data: { user: authedUser }, error: authError } = await supabase!.auth.getUser(token);
+        if (!authError && authedUser) {
+          user = authedUser;
+          userEmail = user.email || null;
+        }
+      } catch (e) {
+        console.error('JWT auth verification failed:', e);
+      }
+    }
+
+    // Validation mock si Supabase n'est pas configuré (mode offline)
     if (!isSupabaseConfigured()) {
+      const alreadyVotedMock = globalMockVotes.some(v => v.ip_hash === ipHash && new Date(v.created_at).getTime() > Date.now() - 24 * 60 * 60 * 1000);
+      if (alreadyVotedMock) {
+        return NextResponse.json({ error: 'Vous avez déjà voté aujourd\'hui.' }, { status: 429 });
+      }
+
       globalMockVotes.push({
         id: Date.now(),
         word: translatedWord.toLowerCase(),
@@ -70,10 +95,17 @@ export async function POST(req: NextRequest) {
         lat: geoData.lat,
         lng: geoData.lon,
         ip_hash: ipHash,
+        user_id: 'mock-user-uuid',
+        email: 'mock@example.com',
         created_at: new Date().toISOString(),
         color: '#00ffff'
       });
       return NextResponse.json({ success: true, mock: true, country: geoData.country_name });
+    }
+
+    // Connexion requise si Supabase est configuré
+    if (!user) {
+      return NextResponse.json({ error: 'Connexion Google requise pour voter.' }, { status: 401 });
     }
 
     const countryName = normalizeCountryName(geoData.country_name);
@@ -93,10 +125,11 @@ export async function POST(req: NextRequest) {
     const countryMidnightUTC = new Date(Date.UTC(y, m, d) - offsetHours * 3600000);
     const sinceDate = countryMidnightUTC.toISOString();
     
+    // Vérification du vote par ID d'utilisateur unique Reddit
     const { data: existingVote, error: checkError } = await supabase!
       .from('votes')
       .select('id')
-      .eq('ip_hash', ipHash)
+      .eq('user_id', user.id)
       .gt('created_at', sinceDate)
       .maybeSingle();
 
@@ -108,7 +141,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Vous avez déjà voté aujourd\'hui.' }, { status: 429 });
     }
 
-    const { error: insertError } = await supabase!
+    // Créer un client Supabase avec les headers d'authentification utilisateur
+    const userClient = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
+      {
+        global: {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      }
+    );
+
+    const { error: insertError } = await userClient
       .from('votes')
       .insert({
         word: translatedWord.toLowerCase(),
@@ -116,7 +162,9 @@ export async function POST(req: NextRequest) {
         city: geoData.city,
         lat: geoData.lat,
         lng: geoData.lon,
-        ip_hash: ipHash
+        ip_hash: ipHash,
+        user_id: user.id,
+        email: userEmail
       });
 
     if (insertError) {

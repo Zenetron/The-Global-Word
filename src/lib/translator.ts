@@ -4,9 +4,13 @@ export async function translateBatch(words: string[], targetLang: string): Promi
   if (words.length === 0) return {};
 
   const results: Record<string, string> = {};
-  const uniqueWords = Array.from(new Set(words.filter(Boolean)));
-
   words.forEach(w => { if(w) results[w] = w; });
+
+  if (targetLang === 'en') {
+    return results;
+  }
+
+  const uniqueWords = Array.from(new Set(words.filter(Boolean)));
 
   const noTranslateWords = ['gp', 'f1', 'ia', 'ai', 'us', 'uk', 'eu'];
 

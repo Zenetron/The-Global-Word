@@ -41,6 +41,10 @@ export const translations = {
     shareCard: "Partager cette carte",
     creating: "Création...",
     shareMessage: "Le mot du jour (%country%) est : \"%word%\". Quel est le vôtre ?",
+    loginWithGoogle: "Se connecter avec Google pour voter",
+    connectedAs: "Connecté en tant que %username%",
+    logout: "Se déconnecter",
+    loginRequired: "Connexion Google requise pour voter.",
   },
   en: {
 
@@ -82,5 +86,9 @@ export const translations = {
     shareCard: "Share this card",
     creating: "Creating...",
     shareMessage: "The word of the day (%country%) is: \"%word%\". What is yours?",
+    loginWithGoogle: "Sign in with Google to vote",
+    connectedAs: "Connected as %username%",
+    logout: "Logout",
+    loginRequired: "Google login required to vote.",
   }
 };
