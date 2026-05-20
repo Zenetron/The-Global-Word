@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import SubmissionForm from '@/components/SubmissionForm';
 import SidebarStats from '@/components/SidebarStats';
 import ActivityFeed from '@/components/ActivityFeed';
+import UserHistory from '@/components/UserHistory';
 import { COUNTRIES, CONTINENTS } from '@/lib/countries';
 import { supabase } from '@/lib/supabase';
 import CountryCard from '@/components/CountryCard';
@@ -306,6 +307,8 @@ export default function Home() {
             }}
           />
         )}
+
+        <UserHistory user={user} />
       </main>
     );
   }
