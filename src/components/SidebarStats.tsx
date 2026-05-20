@@ -260,7 +260,7 @@ export default function SidebarStats({ globeData, topWords, wordDistributions, c
       
       <button
         onClick={() => setIsMobileOpen(!isMobileOpen)}
-        className="fixed top-6 right-6 z-50 p-3 bg-black/60 backdrop-blur-xl border border-white/10 rounded-full text-white md:hidden shadow-2xl"
+        className="fixed top-20 right-6 z-50 p-3 bg-black/60 backdrop-blur-xl border border-white/10 rounded-full text-white md:hidden shadow-2xl"
       >
         <Search size={20} className={isMobileOpen ? 'text-neon-cyan' : ''} />
       </button>

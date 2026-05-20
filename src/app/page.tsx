@@ -56,7 +56,7 @@ function UserHeader({ user, onLoginGoogle, onLogout }: { user: any; onLoginGoogl
   const username = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email || '';
 
   return (
-    <div ref={panelRef} className="fixed top-5 right-6 z-30 flex items-center gap-2 pointer-events-auto">
+    <div ref={panelRef} className="fixed top-5 right-6 z-[60] flex items-center gap-2 pointer-events-auto">
       {user ? (
         <>
           {/* Bouton "Mes mots" */}
