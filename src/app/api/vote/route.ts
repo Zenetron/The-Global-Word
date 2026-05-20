@@ -103,58 +103,54 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, mock: true, country: geoData.country_name });
     }
 
-    // Connexion requise si Supabase est configuré
-    if (!user) {
-      return NextResponse.json({ error: 'Connexion Google requise pour voter.' }, { status: 401 });
-    }
-
     const countryName = normalizeCountryName(geoData.country_name);
     const countryInfo = COUNTRIES.find(c => c.name === countryName);
-    const lng = geoData.lon || countryInfo?.lng || 0;
+    const countryLng = geoData.lon || countryInfo?.lng || 0;
     const continent = countryInfo?.continent;
 
-    let offsetHours = Math.round(lng / 15);
+    let offsetHours = Math.round(countryLng / 15);
     if (continent === 'Europe' && offsetHours < 1) offsetHours = 1;
-    
+
     const now = new Date();
     const countryNow = new Date(now.getTime() + offsetHours * 3600000);
     const y = countryNow.getUTCFullYear();
     const m = countryNow.getUTCMonth();
     const d = countryNow.getUTCDate();
-    
+
     const countryMidnightUTC = new Date(Date.UTC(y, m, d) - offsetHours * 3600000);
     const sinceDate = countryMidnightUTC.toISOString();
-    
-    // Vérification du vote par ID d'utilisateur unique Reddit
-    const { data: existingVote, error: checkError } = await supabase!
-      .from('votes')
-      .select('id')
-      .eq('user_id', user.id)
-      .gt('created_at', sinceDate)
-      .maybeSingle();
 
-    if (checkError) {
-      console.error('Erreur Supabase Check:', checkError.message);
+    // Vérification anti-spam : par user_id si connecté, par ip_hash si anonyme
+    if (user) {
+      const { data: existingVote } = await supabase!
+        .from('votes')
+        .select('id')
+        .eq('user_id', user.id)
+        .gt('created_at', sinceDate)
+        .maybeSingle();
+      if (existingVote) {
+        return NextResponse.json({ error: 'Vous avez déjà voté aujourd\'hui.' }, { status: 429 });
+      }
+    } else {
+      const { data: existingVote } = await supabase!
+        .from('votes')
+        .select('id')
+        .eq('ip_hash', ipHash)
+        .gt('created_at', sinceDate)
+        .maybeSingle();
+      if (existingVote) {
+        return NextResponse.json({ error: 'Vous avez déjà voté aujourd\'hui.' }, { status: 429 });
+      }
     }
 
-    if (existingVote) {
-      return NextResponse.json({ error: 'Vous avez déjà voté aujourd\'hui.' }, { status: 429 });
-    }
-
-    // Créer un client Supabase avec les headers d'authentification utilisateur
-    const userClient = createClient(
+    // Insertion avec client authentifié si connecté, sinon client anonyme
+    const insertClient = (user && token) ? createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL || '',
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
-      {
-        global: {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
-      }
-    );
+      { global: { headers: { Authorization: `Bearer ${token}` } } }
+    ) : supabase!;
 
-    const { error: insertError } = await userClient
+    const { error: insertError } = await insertClient
       .from('votes')
       .insert({
         word: translatedWord.toLowerCase(),
@@ -163,7 +159,7 @@ export async function POST(req: NextRequest) {
         lat: geoData.lat,
         lng: geoData.lon,
         ip_hash: ipHash,
-        user_id: user.id,
+        user_id: user?.id || null,
         email: userEmail
       });
 
