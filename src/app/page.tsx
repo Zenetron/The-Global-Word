@@ -369,13 +369,6 @@ export default function Home() {
         </div>
       )}
 
-      {/* Header permanent : connexion Google + historique */}
-      <UserHeader
-        user={user}
-        onLoginGoogle={handleLoginGoogle}
-        onLogout={handleLogout}
-      />
-
       <SubmissionForm
         onSubmit={handleSubmission}
         user={user}
@@ -389,6 +382,9 @@ export default function Home() {
         wordDistributions={wordDistributions}
         countryTrends={countryTrends}
         onSearchCountry={handleSearchCountry}
+        user={user}
+        onLoginGoogle={handleLoginGoogle}
+        onLogout={handleLogout}
       />
 
       {selectedWord && (
