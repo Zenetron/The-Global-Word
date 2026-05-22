@@ -294,7 +294,12 @@ export default function SidebarStats({ globeData, topWords, wordDistributions, c
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2 text-[11px] text-white/50 min-w-0">
                 <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse shrink-0" />
-                <span className="truncate">{profile?.username || user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email}</span>
+                <span className="truncate">
+                  {profile?.username || user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email}
+                  {profile?.score !== undefined && (
+                    <span className="text-neon-emerald font-bold ml-2">({profile.score} pts)</span>
+                  )}
+                </span>
               </div>
               <button
                 onClick={onLogout}

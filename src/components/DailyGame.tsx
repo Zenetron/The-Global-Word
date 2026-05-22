@@ -22,6 +22,7 @@ export default function DailyGame({ onClose, onGameComplete }: { onClose: () => 
   const [roundResult, setRoundResult] = useState<'correct' | 'wrong' | 'timeout' | null>(null);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(true);
 
   useEffect(() => {
     const initGame = async () => {
@@ -126,6 +127,7 @@ export default function DailyGame({ onClose, onGameComplete }: { onClose: () => 
     try {
       const { data: { session } } = await supabase!.auth.getSession();
       if (session) {
+        setIsLoggedIn(true);
         await fetch('/api/game/score', {
           method: 'POST',
           headers: {
@@ -137,12 +139,38 @@ export default function DailyGame({ onClose, onGameComplete }: { onClose: () => 
             timeMs: totalTimeMs
           })
         });
+      } else {
+        setIsLoggedIn(false);
+        // Sauvegarder localement pour l'envoyer après connexion
+        localStorage.setItem('pending_game_score', JSON.stringify({
+          score: totalScore,
+          timeMs: totalTimeMs,
+          date: new Date().toISOString().split('T')[0]
+        }));
       }
     } catch (e) {
       console.error('Erreur sauvegarde score', e);
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleShare = () => {
+    const text = `J'ai marqué ${totalScore} pts au Défi du Jour sur The Global Word ! 🌍 Joue toi aussi !`;
+    if (navigator.share) {
+      navigator.share({ title: 'The Global Word', text, url: window.location.href }).catch(() => {});
+    } else {
+      navigator.clipboard.writeText(text + " " + window.location.href);
+      alert('Score copié dans le presse-papiers !');
+    }
+  };
+
+  const handleRegisterToSave = async () => {
+    // Redirection Google Auth pour sauvegarder
+    await supabase!.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin }
+    });
   };
 
   return (
@@ -289,13 +317,30 @@ export default function DailyGame({ onClose, onGameComplete }: { onClose: () => 
                 {totalScore} <span className="text-2xl text-neon-emerald">pts</span>
               </div>
               
-              <div className="flex gap-4 w-full">
-                <button
-                  onClick={() => { onClose(); onGameComplete(); }}
-                  className="flex-1 py-4 rounded-xl bg-white hover:bg-white/90 text-black font-bold uppercase tracking-widest transition-colors flex items-center justify-center gap-2"
-                >
-                  {saving ? <Loader2 size={20} className="animate-spin" /> : 'Voir le classement'}
-                </button>
+              <div className="flex flex-col gap-3 w-full">
+                {!isLoggedIn && (
+                  <button
+                    onClick={handleRegisterToSave}
+                    className="w-full py-4 rounded-xl bg-neon-cyan hover:bg-neon-cyan/90 text-black font-bold uppercase tracking-widest transition-colors shadow-[0_0_15px_rgba(0,255,255,0.3)]"
+                  >
+                    S'enregistrer pour sauvegarder
+                  </button>
+                )}
+                
+                <div className="flex gap-3 w-full">
+                  <button
+                    onClick={handleShare}
+                    className="flex-1 py-4 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold uppercase tracking-widest transition-colors"
+                  >
+                    Partager
+                  </button>
+                  <button
+                    onClick={() => { onClose(); onGameComplete(); }}
+                    className="flex-1 py-4 rounded-xl bg-white hover:bg-white/90 text-black font-bold uppercase tracking-widest transition-colors flex items-center justify-center gap-2"
+                  >
+                    {saving ? <Loader2 size={20} className="animate-spin" /> : 'Classement'}
+                  </button>
+                </div>
               </div>
             </motion.div>
           )}

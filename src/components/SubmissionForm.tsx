@@ -12,9 +12,10 @@ interface SubmissionFormProps {
   onLoginGoogle: () => void;
   onLoginMagicLink: (email: string) => Promise<boolean>;
   onLogout: () => void;
+  onClose?: () => void;
 }
 
-export default function SubmissionForm({ onSubmit, user, profile, onLoginGoogle, onLoginMagicLink, onLogout }: SubmissionFormProps) {
+export default function SubmissionForm({ onSubmit, user, profile, onLoginGoogle, onLoginMagicLink, onLogout, onClose }: SubmissionFormProps) {
   const { t } = useI18n();
   const [word, setWord] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
@@ -27,10 +28,13 @@ export default function SubmissionForm({ onSubmit, user, profile, onLoginGoogle,
 
   useEffect(() => {
     if (status === 'success') {
-      const timer = setTimeout(() => { setVisible(false); }, 3000);
+      const timer = setTimeout(() => { 
+        setVisible(false); 
+        onClose?.();
+      }, 3000);
       return () => clearTimeout(timer);
     }
-  }, [status]);
+  }, [status, onClose]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

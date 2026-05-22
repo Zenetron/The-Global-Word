@@ -33,6 +33,18 @@ export async function GET(req: NextRequest) {
 
     if (error) throw error;
     
+    // Récupérer le score total
+    const { data: scores } = await client
+      .from('game_scores')
+      .select('score_total')
+      .eq('user_id', user.id);
+      
+    const totalScore = scores ? scores.reduce((sum, s) => sum + s.score_total, 0) : 0;
+    
+    if (profile) {
+      (profile as any).score = totalScore;
+    }
+    
     return NextResponse.json({ profile });
   } catch (err) {
     console.error('Erreur API Profile:', err);

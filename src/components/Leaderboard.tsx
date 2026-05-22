@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { X, Trophy, Loader2, Medal } from 'lucide-react';
+import { X, Trophy, Loader2, Medal, Share2 } from 'lucide-react';
 
 interface LeaderboardEntry {
   rank: number;
@@ -29,6 +29,20 @@ export default function Leaderboard({ onClose, currentUsername }: { onClose: () 
 
   const formatTime = (ms: number) => {
     return (ms / 1000).toFixed(1) + 's';
+  };
+
+  const handleShare = () => {
+    const myRank = leaderboard.find(e => e.username === currentUsername)?.rank;
+    const text = myRank 
+      ? `Je suis Top ${myRank} mondial au défi The Global Word ! 🌍🏆 Viens battre mon score !`
+      : `Rejoins le classement mondial du défi The Global Word ! 🌍🏆`;
+    
+    if (navigator.share) {
+      navigator.share({ title: 'The Global Word Leaderboard', text, url: window.location.href }).catch(() => {});
+    } else {
+      navigator.clipboard.writeText(text + " " + window.location.href);
+      alert('Lien copié dans le presse-papiers !');
+    }
   };
 
   return (
@@ -103,6 +117,15 @@ export default function Leaderboard({ onClose, currentUsername }: { onClose: () 
               </motion.div>
             ))
           )}
+        </div>
+        
+        <div className="mt-4 shrink-0">
+          <button
+            onClick={handleShare}
+            className="w-full py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold uppercase tracking-widest transition-all cursor-pointer flex items-center justify-center gap-2 text-sm"
+          >
+            <Share2 size={16} /> Partager le classement
+          </button>
         </div>
       </motion.div>
     </div>

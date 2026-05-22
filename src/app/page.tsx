@@ -200,6 +200,31 @@ export default function Home() {
         const data = await res.json();
         if (data.profile) {
           setProfile(data.profile);
+          
+          // Vérifier si un score est en attente
+          const pendingScoreStr = localStorage.getItem('pending_game_score');
+          if (pendingScoreStr) {
+            try {
+              const pendingScore = JSON.parse(pendingScoreStr);
+              // On l'envoie en arrière-plan
+              fetch('/api/game/score', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  Authorization: `Bearer ${session.access_token}`
+                },
+                body: JSON.stringify({
+                  score: pendingScore.score,
+                  timeMs: pendingScore.timeMs
+                })
+              }).then(() => {
+                localStorage.removeItem('pending_game_score');
+                // Optionnel : on pourrait recharger le profil pour mettre à jour le total
+              }).catch(console.error);
+            } catch (e) {
+              console.error('Erreur lecture score local', e);
+            }
+          }
         } else {
           setProfile(null);
         }
@@ -426,6 +451,7 @@ export default function Home() {
         onLoginGoogle={handleLoginGoogle}
         onLoginMagicLink={handleLoginMagicLink}
         onLogout={handleLogout}
+        onClose={() => setShowGame(true)}
       />
 
       <SidebarStats
