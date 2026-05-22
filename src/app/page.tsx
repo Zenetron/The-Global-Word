@@ -6,6 +6,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import SubmissionForm from '@/components/SubmissionForm';
 import SidebarStats from '@/components/SidebarStats';
 import ActivityFeed from '@/components/ActivityFeed';
+import UsernamePrompt from '@/components/UsernamePrompt';
+import DailyGame from '@/components/DailyGame';
+import Leaderboard from '@/components/Leaderboard';
 import { COUNTRIES, CONTINENTS } from '@/lib/countries';
 import { supabase } from '@/lib/supabase';
 import CountryCard from '@/components/CountryCard';
@@ -159,6 +162,10 @@ export default function Home() {
   const [focusCoords, setFocusCoords] = useState<{lat: number, lng: number, distance?: number} | null>(null);
   const [selectedWord, setSelectedWord] = useState<{ word: string, country: string, color?: string } | null>(null);
   const [user, setUser] = useState<any>(null);
+  const [profile, setProfile] = useState<{ username: string } | null>(null);
+  const [isProfileLoaded, setIsProfileLoaded] = useState(false);
+  const [showGame, setShowGame] = useState(false);
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
 
   useEffect(() => {
     if (!supabase) return;
@@ -176,6 +183,34 @@ export default function Home() {
     });
     return () => { subscription.unsubscribe(); };
   }, []);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (!user) {
+        setProfile(null);
+        setIsProfileLoaded(true);
+        return;
+      }
+      try {
+        const { data: { session } } = await supabase!.auth.getSession();
+        if (!session) return;
+        const res = await fetch('/api/user/profile', {
+          headers: { Authorization: `Bearer ${session.access_token}` }
+        });
+        const data = await res.json();
+        if (data.profile) {
+          setProfile(data.profile);
+        } else {
+          setProfile(null);
+        }
+      } catch (e) {
+        console.error('Erreur chargement profil', e);
+      } finally {
+        setIsProfileLoaded(true);
+      }
+    };
+    fetchProfile();
+  }, [user]);
 
   const handleLoginGoogle = async () => {
     if (!supabase) return;
@@ -387,6 +422,7 @@ export default function Home() {
       <SubmissionForm
         onSubmit={handleSubmission}
         user={user}
+        profile={profile}
         onLoginGoogle={handleLoginGoogle}
         onLoginMagicLink={handleLoginMagicLink}
         onLogout={handleLogout}
@@ -399,10 +435,31 @@ export default function Home() {
         countryTrends={countryTrends}
         onSearchCountry={handleSearchCountry}
         user={user}
+        profile={profile}
         onLoginGoogle={handleLoginGoogle}
         onLoginMagicLink={handleLoginMagicLink}
         onLogout={handleLogout}
+        onPlayGame={() => setShowGame(true)}
+        onViewLeaderboard={() => setShowLeaderboard(true)}
       />
+
+      {user && isProfileLoaded && !profile && (
+        <UsernamePrompt onProfileCreated={(p) => setProfile(p)} />
+      )}
+
+      {showGame && (
+        <DailyGame 
+          onClose={() => setShowGame(false)} 
+          onGameComplete={() => setShowLeaderboard(true)} 
+        />
+      )}
+
+      {showLeaderboard && (
+        <Leaderboard 
+          onClose={() => setShowLeaderboard(false)} 
+          currentUsername={profile?.username} 
+        />
+      )}
 
       {selectedWord && (
         <CountryCard

@@ -8,12 +8,13 @@ import { useI18n } from '@/hooks/useI18n';
 interface SubmissionFormProps {
   onSubmit: (word: string) => Promise<boolean>;
   user: any;
+  profile?: any;
   onLoginGoogle: () => void;
   onLoginMagicLink: (email: string) => Promise<boolean>;
   onLogout: () => void;
 }
 
-export default function SubmissionForm({ onSubmit, user, onLoginGoogle, onLoginMagicLink, onLogout }: SubmissionFormProps) {
+export default function SubmissionForm({ onSubmit, user, profile, onLoginGoogle, onLoginMagicLink, onLogout }: SubmissionFormProps) {
   const { t } = useI18n();
   const [word, setWord] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
@@ -81,7 +82,7 @@ export default function SubmissionForm({ onSubmit, user, onLoginGoogle, onLoginM
     );
   }
 
-  const username = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email || 'User';
+  const username = profile?.username || user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email || 'User';
 
   return (
     <div className="fixed inset-0 flex flex-col items-center justify-center pointer-events-none z-10">

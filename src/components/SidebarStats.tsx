@@ -13,9 +13,12 @@ interface SidebarStatsProps {
   countryTrends?: Record<string, any[]>;
   onSearchCountry?: (country: string) => void;
   user?: any;
+  profile?: any;
   onLoginGoogle?: () => void;
   onLoginMagicLink?: (email: string) => Promise<boolean>;
   onLogout?: () => void;
+  onPlayGame?: () => void;
+  onViewLeaderboard?: () => void;
 }
 
 type Period = 'today' | 'month' | 'year';
@@ -23,7 +26,7 @@ type Zone = 'world' | 'continent' | 'country';
 
 import { useI18n } from '@/hooks/useI18n';
 
-export default function SidebarStats({ globeData, topWords, wordDistributions, countryTrends, onSearchCountry, user, onLoginGoogle, onLoginMagicLink, onLogout }: SidebarStatsProps) {
+export default function SidebarStats({ globeData, topWords, wordDistributions, countryTrends, onSearchCountry, user, profile, onLoginGoogle, onLoginMagicLink, onLogout, onPlayGame, onViewLeaderboard }: SidebarStatsProps) {
   const { t, locale } = useI18n();
   const [period, setPeriod] = useState<Period>('today');
   const [zone, setZone] = useState<Zone>('world');
@@ -291,7 +294,7 @@ export default function SidebarStats({ globeData, topWords, wordDistributions, c
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2 text-[11px] text-white/50 min-w-0">
                 <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse shrink-0" />
-                <span className="truncate">{user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email}</span>
+                <span className="truncate">{profile?.username || user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email}</span>
               </div>
               <button
                 onClick={onLogout}
@@ -366,6 +369,21 @@ export default function SidebarStats({ globeData, topWords, wordDistributions, c
         </div>
 
         <div className="mb-6 relative z-50">
+          <div className="flex gap-2 mb-4">
+            <button
+              onClick={onPlayGame}
+              className="flex-1 py-2 rounded-xl bg-neon-emerald/20 hover:bg-neon-emerald/30 border border-neon-emerald/40 text-neon-emerald font-bold text-[11px] uppercase tracking-widest transition-all cursor-pointer flex items-center justify-center gap-2"
+            >
+              🎮 Jouer
+            </button>
+            <button
+              onClick={onViewLeaderboard}
+              className="flex-1 py-2 rounded-xl bg-yellow-500/10 hover:bg-yellow-500/20 border border-yellow-500/30 text-yellow-500 font-bold text-[11px] uppercase tracking-widest transition-all cursor-pointer flex items-center justify-center gap-2"
+            >
+              🏆 Classement
+            </button>
+          </div>
+
           <form onSubmit={handleSearch} className="relative">
             <input
               type="text"
