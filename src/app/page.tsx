@@ -189,6 +189,21 @@ export default function Home() {
     }
   };
 
+  const handleLoginMagicLink = async (email: string): Promise<boolean> => {
+    if (!supabase) return false;
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: { emailRedirectTo: window.location.origin }
+      });
+      if (error) { console.error('Magic link error:', error); return false; }
+      return true;
+    } catch (e) {
+      console.error('Magic link error:', e);
+      return false;
+    }
+  };
+
   const handleLogout = async () => {
     if (!supabase) return;
     try {
@@ -384,6 +399,7 @@ export default function Home() {
         onSearchCountry={handleSearchCountry}
         user={user}
         onLoginGoogle={handleLoginGoogle}
+        onLoginMagicLink={handleLoginMagicLink}
         onLogout={handleLogout}
       />
 
