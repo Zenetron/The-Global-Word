@@ -9,21 +9,24 @@ interface SubmissionFormProps {
   onSubmit: (word: string) => Promise<boolean>;
   user: any;
   onLoginGoogle: () => void;
+  onLoginMagicLink: (email: string) => Promise<boolean>;
   onLogout: () => void;
 }
 
-export default function SubmissionForm({ onSubmit, user, onLoginGoogle, onLogout }: SubmissionFormProps) {
+export default function SubmissionForm({ onSubmit, user, onLoginGoogle, onLoginMagicLink, onLogout }: SubmissionFormProps) {
   const { t } = useI18n();
   const [word, setWord] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
   const [visible, setVisible] = useState(true);
+  const [showEmailForm, setShowEmailForm] = useState(false);
+  const [emailInput, setEmailInput] = useState('');
+  const [emailSent, setEmailSent] = useState(false);
+  const [emailLoading, setEmailLoading] = useState(false);
 
   useEffect(() => {
     if (status === 'success') {
-      const timer = setTimeout(() => {
-        setVisible(false);
-      }, 3000);
+      const timer = setTimeout(() => { setVisible(false); }, 3000);
       return () => clearTimeout(timer);
     }
   }, [status]);
@@ -31,9 +34,7 @@ export default function SubmissionForm({ onSubmit, user, onLoginGoogle, onLogout
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!word.trim() || word.trim().length > 20) return;
-    
     setStatus('loading');
-    
     try {
       const success = await onSubmit(word.trim());
       if (success) {
@@ -42,10 +43,19 @@ export default function SubmissionForm({ onSubmit, user, onLoginGoogle, onLogout
         setStatus('error');
         setErrorMessage(t('alreadyVoted'));
       }
-    } catch (err) {
+    } catch {
       setStatus('error');
       setErrorMessage(t('error'));
     }
+  };
+
+  const handleSendMagicLink = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!emailInput.trim()) return;
+    setEmailLoading(true);
+    const ok = await onLoginMagicLink(emailInput.trim());
+    setEmailLoading(false);
+    if (ok) setEmailSent(true);
   };
 
   if (!visible) return null;
@@ -60,7 +70,7 @@ export default function SubmissionForm({ onSubmit, user, onLoginGoogle, onLogout
         <div className="bg-glass p-8 rounded-2xl text-center backdrop-blur-md flex flex-col items-center">
           <h2 className="text-3xl font-bold text-neon-emerald mb-2">{t('success')}</h2>
           <p className="text-gray-300 mb-6">{t('wordAdded')}</p>
-          <button 
+          <button
             onClick={() => setVisible(false)}
             className="px-6 py-2 rounded-full border border-white/20 hover:bg-white/10 text-white transition-all text-sm uppercase tracking-widest"
           >
@@ -81,7 +91,7 @@ export default function SubmissionForm({ onSubmit, user, onLoginGoogle, onLogout
         transition={{ delay: 0.5, duration: 0.8 }}
         className="relative pointer-events-auto flex flex-col items-center bg-glass p-6 md:p-8 rounded-2xl shadow-2xl backdrop-blur-md border border-white/10 w-[90%] max-w-md mx-auto"
       >
-        <button 
+        <button
           type="button"
           onClick={() => setVisible(false)}
           className="absolute top-4 right-4 text-white/30 hover:text-white transition-colors"
@@ -90,33 +100,95 @@ export default function SubmissionForm({ onSubmit, user, onLoginGoogle, onLogout
         </button>
 
         <form onSubmit={handleSubmit} className="w-full flex flex-col items-center">
+          {/* Zone auth */}
           {user ? (
             <div className="text-[10px] md:text-xs text-white/50 mb-4 flex items-center justify-center gap-2 bg-white/5 border border-white/5 rounded-full px-3 py-1">
               <span className="w-1.5 h-1.5 rounded-full bg-neon-emerald animate-pulse"></span>
               <span>{t('connectedAs').replace('%username%', username)}</span>
               <span>•</span>
-              <button 
-                type="button" 
-                onClick={onLogout} 
+              <button
+                type="button"
+                onClick={onLogout}
                 className="text-neon-violet hover:text-white hover:underline transition-colors focus:outline-none cursor-pointer font-semibold"
               >
                 {t('logout')}
               </button>
             </div>
-          ) : (
-            <button
-              type="button"
-              onClick={onLoginGoogle}
-              className="text-[10px] md:text-xs text-white/70 mb-4 flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-full px-3 py-1.5 transition-all cursor-pointer scale-100 active:scale-95 duration-200"
+          ) : emailSent ? (
+            <motion.div
+              initial={{ opacity: 0, y: -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="w-full mb-4 flex flex-col items-center gap-1.5 py-3 px-4 rounded-xl bg-green-500/10 border border-green-500/20"
             >
-              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5">
-                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"/>
-                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"/>
-              </svg>
-              <span>{t('loginWithGoogle')}</span>
-            </button>
+              <span className="text-green-400 text-base">✉️</span>
+              <p className="text-[11px] text-green-300 text-center leading-relaxed">
+                Lien envoyé ! Vérifie ta boîte mail.
+              </p>
+              <button
+                type="button"
+                onClick={() => { setEmailSent(false); setEmailInput(''); setShowEmailForm(false); }}
+                className="text-[10px] text-white/30 hover:text-white/60 transition-colors cursor-pointer"
+              >
+                Renvoyer
+              </button>
+            </motion.div>
+          ) : showEmailForm ? (
+            <motion.div
+              initial={{ opacity: 0, y: -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="w-full mb-4"
+            >
+              <form onSubmit={handleSendMagicLink} className="flex gap-2">
+                <input
+                  type="email"
+                  required
+                  autoFocus
+                  value={emailInput}
+                  onChange={(e) => setEmailInput(e.target.value)}
+                  placeholder="ton@email.com"
+                  className="flex-1 bg-white/5 border border-white/15 focus:border-neon-cyan rounded-full px-3 py-1.5 text-[11px] text-white placeholder:text-white/25 focus:outline-none transition-colors"
+                />
+                <button
+                  type="submit"
+                  disabled={emailLoading || !emailInput.trim()}
+                  className="shrink-0 px-3 py-1.5 rounded-full bg-neon-cyan/15 hover:bg-neon-cyan/25 border border-neon-cyan/30 text-neon-cyan text-[10px] font-semibold uppercase tracking-wider transition-all disabled:opacity-40 cursor-pointer"
+                >
+                  {emailLoading ? '...' : 'Envoyer'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowEmailForm(false)}
+                  className="text-white/30 hover:text-white transition-colors cursor-pointer text-[10px]"
+                >
+                  ✕
+                </button>
+              </form>
+            </motion.div>
+          ) : (
+            <div className="flex items-center gap-2 mb-4">
+              {/* Bouton Magic Link */}
+              <button
+                type="button"
+                onClick={() => setShowEmailForm(true)}
+                className="text-[10px] md:text-xs text-white/70 flex items-center justify-center gap-1.5 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-full px-3 py-1.5 transition-all cursor-pointer active:scale-95 duration-200"
+              >
+                ✉ Email
+              </button>
+              {/* Bouton Google */}
+              <button
+                type="button"
+                onClick={onLoginGoogle}
+                className="text-[10px] md:text-xs text-white/70 flex items-center justify-center gap-1.5 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-full px-3 py-1.5 transition-all cursor-pointer active:scale-95 duration-200"
+              >
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="w-3 h-3">
+                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"/>
+                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"/>
+                </svg>
+                Google
+              </button>
+            </div>
           )}
 
           <label htmlFor="word" className="text-xl md:text-2xl font-light text-white mb-4 md:mb-6 tracking-wider text-center">
@@ -135,13 +207,13 @@ export default function SubmissionForm({ onSubmit, user, onLoginGoogle, onLogout
           <div className="mt-2 h-4 text-[10px] md:text-sm text-white/50">
             {word.length}/20 {t('characters')}
           </div>
-          
+
           {status === 'error' && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-4 text-neon-violet text-center text-sm font-medium">
               {errorMessage}
             </motion.div>
           )}
-          
+
           <button
             type="submit"
             disabled={!word.trim() || status === 'loading'}

@@ -388,6 +388,7 @@ export default function Home() {
         onSubmit={handleSubmission}
         user={user}
         onLoginGoogle={handleLoginGoogle}
+        onLoginMagicLink={handleLoginMagicLink}
         onLogout={handleLogout}
       />
 
