@@ -74,12 +74,20 @@ export default function SubmissionForm({ onSubmit, user, profile, onLoginGoogle,
         <div className="bg-glass p-8 rounded-2xl text-center backdrop-blur-md flex flex-col items-center">
           <h2 className="text-3xl font-bold text-neon-emerald mb-2">{t('success')}</h2>
           <p className="text-gray-300 mb-6">{t('wordAdded')}</p>
-          <button
-            onClick={() => setVisible(false)}
-            className="px-6 py-2 rounded-full border border-white/20 hover:bg-white/10 text-white transition-all text-sm uppercase tracking-widest"
-          >
-            {t('close')}
-          </button>
+          <div className="flex flex-col gap-3 w-full max-w-[200px]">
+            <button
+              onClick={() => { setVisible(false); onPlayRequest?.(); }}
+              className="w-full px-6 py-3 rounded-full bg-neon-cyan/20 hover:bg-neon-cyan/30 text-neon-cyan border border-neon-cyan/40 transition-all font-bold uppercase tracking-widest shadow-[0_0_15px_rgba(0,255,255,0.2)] text-xs flex items-center justify-center gap-2"
+            >
+              🎮 Jouer au défi
+            </button>
+            <button
+              onClick={() => setVisible(false)}
+              className="w-full px-6 py-3 rounded-full border border-white/20 hover:bg-white/10 text-white transition-all text-xs uppercase tracking-widest font-bold"
+            >
+              {t('close')}
+            </button>
+          </div>
         </div>
       </motion.div>
     );
