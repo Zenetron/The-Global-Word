@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { createClient } from '@supabase/supabase-js';
+import { isForbidden } from '@/lib/blacklist';
 
 export const dynamic = 'force-dynamic';
 
@@ -53,6 +54,10 @@ export async function POST(req: NextRequest) {
     const { username } = await req.json();
     if (!username || username.trim().length < 3 || username.trim().length > 30) {
       return NextResponse.json({ error: 'Le pseudo doit faire entre 3 et 30 caractères' }, { status: 400 });
+    }
+    
+    if (isForbidden(username)) {
+      return NextResponse.json({ error: 'Ce pseudo n\'est pas autorisé' }, { status: 400 });
     }
 
     const { data: { user }, error: authError } = await supabase!.auth.getUser(token);

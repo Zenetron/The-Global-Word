@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { createClient } from '@supabase/supabase-js';
+import { getLocalMidnightAndDate } from '@/lib/ipUtils';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,13 +31,13 @@ export async function POST(req: NextRequest) {
       { global: { headers: { Authorization: `Bearer ${token}` } } }
     );
 
-    const today = new Date().toISOString().split('T')[0];
+    const { localDateStr } = await getLocalMidnightAndDate(req);
 
     const { error } = await client
       .from('game_scores')
       .insert({
         user_id: user.id,
-        game_date: today,
+        game_date: localDateStr,
         score_total: Math.min(3000, Math.max(0, score)), // Max 3x1000 pts
         time_taken_ms: timeMs
       });

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { COUNTRIES } from '@/lib/countries';
+import { getLocalMidnightAndDate } from '@/lib/ipUtils';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,6 +24,32 @@ export async function GET(req: NextRequest) {
           { word: 'hola', correctCountry: 'Spain', options: ['Spain', 'Mexico', 'Argentina'] }
         ]
       });
+    }
+    
+    // On récupère l'utilisateur s'il est connecté
+    const authHeader = req.headers.get('Authorization');
+    const token = authHeader?.split(' ')[1];
+    let userId = null;
+
+    if (token) {
+      const { data: { user } } = await supabase!.auth.getUser(token);
+      if (user) {
+        userId = user.id;
+        
+        // Vérifier s'il a déjà joué aujourd'hui
+        const { localDateStr } = await getLocalMidnightAndDate(req);
+        
+        const { data: existingScore } = await supabase!
+          .from('game_scores')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('game_date', localDateStr)
+          .maybeSingle();
+
+        if (existingScore) {
+          return NextResponse.json({ error: 'already_played' });
+        }
+      }
     }
 
     // On cherche les mots de la veille

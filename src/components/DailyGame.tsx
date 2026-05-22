@@ -14,7 +14,7 @@ interface Round {
 
 export default function DailyGame({ onClose, onGameComplete }: { onClose: () => void, onGameComplete: () => void }) {
   const [rounds, setRings] = useState<Round[]>([]);
-  const [gameState, setGameState] = useState<'loading' | 'start' | 'playing' | 'round_result' | 'game_over'>('loading');
+  const [gameState, setGameState] = useState<'loading' | 'start' | 'playing' | 'round_result' | 'game_over' | 'already_played'>('loading');
   const [currentRoundIndex, setCurrentRoundIndex] = useState(0);
   const [timeLeft, setTimeLeft] = useState(10000); // 10 secondes en ms
   const [totalScore, setTotalScore] = useState(0);
@@ -24,21 +24,33 @@ export default function DailyGame({ onClose, onGameComplete }: { onClose: () => 
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    fetch('/api/game/daily')
-      .then(r => r.json())
-      .then(data => {
+    const initGame = async () => {
+      try {
+        const { data: { session } } = await supabase!.auth.getSession();
+        const headers: Record<string, string> = {};
+        if (session) headers['Authorization'] = `Bearer ${session.access_token}`;
+
+        const r = await fetch('/api/game/daily', { headers });
+        const data = await r.json();
+
+        if (data.error === 'already_played') {
+          setGameState('already_played');
+          return;
+        }
+
         if (data.rounds) {
           setRings(data.rounds);
           setGameState('start');
         } else {
           console.error(data.error);
-          onClose(); // Ou afficher une erreur
+          onClose();
         }
-      })
-      .catch(e => {
+      } catch (e) {
         console.error('Erreur chargement jeu', e);
         onClose();
-      });
+      }
+    };
+    initGame();
   }, []);
 
   useEffect(() => {
@@ -152,6 +164,20 @@ export default function DailyGame({ onClose, onGameComplete }: { onClose: () => 
             <motion.div key="loading" exit={{ opacity: 0 }} className="flex flex-col items-center justify-center py-20">
               <Loader2 size={40} className="text-neon-cyan animate-spin mb-4" />
               <p className="text-white/50 text-sm tracking-widest uppercase">Génération du défi...</p>
+            </motion.div>
+          )}
+
+          {gameState === 'already_played' && (
+            <motion.div key="already_played" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center text-center py-20">
+              <Timer size={48} className="text-yellow-500 mb-4" />
+              <h2 className="text-2xl font-black text-white mb-2">Reviens demain !</h2>
+              <p className="text-white/60 mb-6">Tu as déjà joué au défi aujourd'hui (selon l'heure de ton pays).</p>
+              <button
+                onClick={onClose}
+                className="px-8 py-3 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all uppercase tracking-widest text-sm font-bold"
+              >
+                Fermer
+              </button>
             </motion.div>
           )}
 
