@@ -76,7 +76,7 @@ export default function SubmissionForm({ onSubmit, user, profile, onLoginGoogle,
           <h2 className="text-3xl font-bold text-neon-emerald mb-2">{t('success')}</h2>
           <p className="text-gray-300 mb-6">{t('wordAdded')}</p>
           <button
-            onClick={() => setVisible(false)}
+            onClick={() => { setVisible(false); onClose?.(); }}
             className="px-6 py-2 rounded-full border border-white/20 hover:bg-white/10 text-white transition-all text-sm uppercase tracking-widest"
           >
             {t('close')}
@@ -98,7 +98,7 @@ export default function SubmissionForm({ onSubmit, user, profile, onLoginGoogle,
       >
         <button
           type="button"
-          onClick={() => setVisible(false)}
+          onClick={() => { setVisible(false); onClose?.(); }}
           className="absolute top-4 right-4 text-white/30 hover:text-white transition-colors"
         >
           <X size={20} />
