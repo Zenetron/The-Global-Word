@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { X, Trophy, Loader2, Medal, Share2 } from 'lucide-react';
+import ScoreCard from './ScoreCard';
 
 interface LeaderboardEntry {
   rank: number;
@@ -14,6 +15,7 @@ interface LeaderboardEntry {
 export default function Leaderboard({ onClose, currentUsername }: { onClose: () => void, currentUsername?: string }) {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showScoreCard, setShowScoreCard] = useState(false);
 
   useEffect(() => {
     fetch('/api/game/leaderboard')
@@ -31,23 +33,22 @@ export default function Leaderboard({ onClose, currentUsername }: { onClose: () 
     return (ms / 1000).toFixed(1) + 's';
   };
 
-  const handleShare = (platform: 'x' | 'reddit' | 'insta') => {
-    const myRank = leaderboard.find(e => e.username === currentUsername)?.rank;
-    const text = myRank 
-      ? `Je suis Top ${myRank} mondial au défi The Global Word ! 🌍🏆 Viens battre mon score !`
-      : `Rejoins le classement mondial du défi The Global Word ! 🌍🏆`;
-    const url = window.location.href;
-    
-    if (platform === 'x') {
-      window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, '_blank');
-    } else if (platform === 'reddit') {
-      window.open(`https://reddit.com/submit?url=${encodeURIComponent(url)}&title=${encodeURIComponent(text)}`, '_blank');
-    } else if (platform === 'insta') {
-      // Pas de lien direct pour insta web, on copie dans le presse-papier
-      navigator.clipboard.writeText(text + " " + url);
-      alert('Texte copié ! Ouvre Instagram pour partager ton score 📸');
-    }
+  const handleShare = () => {
+    setShowScoreCard(true);
   };
+
+  const myEntry = leaderboard.find(e => e.username === currentUsername);
+
+  if (showScoreCard && myEntry) {
+    return (
+      <ScoreCard
+        username={myEntry.username}
+        score={myEntry.score}
+        rank={myEntry.rank}
+        onClose={() => setShowScoreCard(false)}
+      />
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md px-4 py-8">
@@ -123,29 +124,16 @@ export default function Leaderboard({ onClose, currentUsername }: { onClose: () 
           )}
         </div>
         
-        <div className="mt-4 shrink-0 flex flex-col gap-2">
-          <span className="text-xs text-white/50 text-center uppercase tracking-widest font-bold mb-1">Partager sur</span>
-          <div className="flex gap-2">
+        {currentUsername && myEntry && (
+          <div className="mt-4 shrink-0">
             <button
-              onClick={() => handleShare('x')}
-              className="flex-1 py-3 rounded-xl bg-black hover:bg-zinc-900 border border-white/20 text-white font-bold transition-all cursor-pointer flex items-center justify-center"
+              onClick={handleShare}
+              className="w-full py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold uppercase tracking-widest transition-all cursor-pointer flex items-center justify-center gap-2 text-sm"
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 22.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-            </button>
-            <button
-              onClick={() => handleShare('reddit')}
-              className="flex-1 py-3 rounded-xl bg-[#FF4500] hover:bg-[#FF4500]/80 text-white font-bold transition-all cursor-pointer flex items-center justify-center"
-            >
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm5.01 4.744c.688 0 1.25.561 1.25 1.249a1.25 1.25 0 0 1-2.498.056l-2.597-.547-.8 3.747c1.824.07 3.48.632 4.674 1.488.308-.309.73-.491 1.207-.491.968 0 1.754.786 1.754 1.754 0 .716-.435 1.333-1.01 1.614a3.111 3.111 0 0 1 .042.52c0 2.694-3.13 4.87-7.004 4.87-3.874 0-7.004-2.176-7.004-4.87 0-.183.015-.366.043-.534A1.748 1.748 0 0 1 4.028 12c0-.968.786-1.754 1.754-1.754.463 0 .898.196 1.207.49 1.207-.883 2.878-1.43 4.744-1.487l.885-4.182a.342.342 0 0 1 .14-.197.35.35 0 0 1 .238-.042l2.906.617a1.214 1.214 0 0 1 1.108-.701zM9.25 12C8.561 12 8 12.562 8 13.25c0 .687.561 1.248 1.25 1.248.687 0 1.248-.561 1.248-1.249 0-.688-.561-1.249-1.249-1.249zm5.5 0c-.687 0-1.248.561-1.248 1.25 0 .687.561 1.248 1.249 1.248.688 0 1.249-.561 1.249-1.249 0-.688-.561-1.249-1.25-1.249zm-5.466 3.99a.327.327 0 0 0-.231.094.33.33 0 0 0 0 .463c.842.842 2.484.913 2.961.913.477 0 2.105-.056 2.961-.913a.361.361 0 0 0 .029-.463.33.33 0 0 0-.464 0c-.547.533-1.684.73-2.512.73-.828 0-1.979-.196-2.512-.73a.326.326 0 0 0-.232-.095z"/></svg>
-            </button>
-            <button
-              onClick={() => handleShare('insta')}
-              className="flex-1 py-3 rounded-xl bg-gradient-to-tr from-[#f09433] via-[#dc2743] to-[#bc1888] hover:opacity-90 text-white font-bold transition-all cursor-pointer flex items-center justify-center"
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
+              <Share2 size={16} /> Partager ma carte
             </button>
           </div>
-        </div>
+        )}
       </motion.div>
     </div>
   );

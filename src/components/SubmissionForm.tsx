@@ -12,10 +12,10 @@ interface SubmissionFormProps {
   onLoginGoogle: () => void;
   onLoginMagicLink: (email: string) => Promise<boolean>;
   onLogout: () => void;
-  onClose?: () => void;
+  onPlayRequest?: () => void;
 }
 
-export default function SubmissionForm({ onSubmit, user, profile, onLoginGoogle, onLoginMagicLink, onLogout, onClose }: SubmissionFormProps) {
+export default function SubmissionForm({ onSubmit, user, profile, onLoginGoogle, onLoginMagicLink, onLogout, onPlayRequest }: SubmissionFormProps) {
   const { t } = useI18n();
   const [word, setWord] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
@@ -30,11 +30,10 @@ export default function SubmissionForm({ onSubmit, user, profile, onLoginGoogle,
     if (status === 'success') {
       const timer = setTimeout(() => { 
         setVisible(false); 
-        onClose?.();
       }, 3000);
       return () => clearTimeout(timer);
     }
-  }, [status, onClose]);
+  }, [status]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,7 +75,7 @@ export default function SubmissionForm({ onSubmit, user, profile, onLoginGoogle,
           <h2 className="text-3xl font-bold text-neon-emerald mb-2">{t('success')}</h2>
           <p className="text-gray-300 mb-6">{t('wordAdded')}</p>
           <button
-            onClick={() => { setVisible(false); onClose?.(); }}
+            onClick={() => setVisible(false)}
             className="px-6 py-2 rounded-full border border-white/20 hover:bg-white/10 text-white transition-all text-sm uppercase tracking-widest"
           >
             {t('close')}
@@ -98,7 +97,7 @@ export default function SubmissionForm({ onSubmit, user, profile, onLoginGoogle,
       >
         <button
           type="button"
-          onClick={() => { setVisible(false); onClose?.(); }}
+          onClick={() => setVisible(false)}
           className="absolute top-4 right-4 text-white/30 hover:text-white transition-colors"
         >
           <X size={20} />
@@ -219,13 +218,22 @@ export default function SubmissionForm({ onSubmit, user, profile, onLoginGoogle,
             </motion.div>
           )}
 
-          <button
-            type="submit"
-            disabled={!word.trim() || status === 'loading'}
-            className="mt-6 md:mt-8 px-8 py-3 rounded-full bg-white/10 hover:bg-white/20 text-white border border-white/20 transition-all hover:shadow-[0_0_15px_rgba(0,255,255,0.5)] disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-widest text-xs md:text-sm font-bold"
-          >
-            {status === 'loading' ? t('loading') : t('submit')}
-          </button>
+          <div className="mt-6 md:mt-8 w-full flex flex-col gap-3">
+            <button
+              type="submit"
+              disabled={!word.trim() || status === 'loading'}
+              className="w-full py-3 rounded-full bg-white/10 hover:bg-white/20 text-white border border-white/20 transition-all hover:shadow-[0_0_15px_rgba(0,255,255,0.5)] disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-widest text-xs md:text-sm font-bold"
+            >
+              {status === 'loading' ? t('loading') : t('submit')}
+            </button>
+            <button
+              type="button"
+              onClick={() => { setVisible(false); onPlayRequest?.(); }}
+              className="w-full py-3 rounded-full bg-neon-cyan/10 hover:bg-neon-cyan/20 text-neon-cyan border border-neon-cyan/30 transition-all hover:shadow-[0_0_15px_rgba(0,255,255,0.3)] uppercase tracking-widest text-xs md:text-sm font-bold flex items-center justify-center gap-2"
+            >
+              🎮 Jouer au défi
+            </button>
+          </div>
         </form>
       </motion.div>
     </div>

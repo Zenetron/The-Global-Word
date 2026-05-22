@@ -451,7 +451,7 @@ export default function Home() {
         onLoginGoogle={handleLoginGoogle}
         onLoginMagicLink={handleLoginMagicLink}
         onLogout={handleLogout}
-        onClose={() => setShowGame(true)}
+        onPlayRequest={() => setShowGame(true)}
       />
 
       <SidebarStats
