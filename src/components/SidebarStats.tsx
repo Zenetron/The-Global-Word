@@ -566,7 +566,16 @@ export default function SidebarStats({ globeData, topWords, wordDistributions, c
 
         <div className="mt-8 text-center text-[10px] text-white/20 pb-4">
           The Global Word © 2026<br />
-          {t('globalVision')}
+          {t('globalVision')}<br />
+          Made by{' '}
+          <a
+            href="https://www.blinkweb.fr"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-semibold text-neon-cyan hover:text-white transition-all hover:underline"
+          >
+            www.blinkweb.fr
+          </a>
         </div>
       </motion.div>
     </>

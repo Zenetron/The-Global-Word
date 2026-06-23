@@ -4,7 +4,9 @@ export const BLACKLIST = [
 
   "fuck", "shit", "asshole", "bitch", "nigger", "dick", "pussy", "sex", "porn", "cock", "cunt",
 
-  "fucker", "shitty", "bastard"
+  "fucker", "shitty", "bastard",
+
+  "aïd", "aid", "eid", "mouton"
 ];
 
 export const isForbidden = (word: string): boolean => {
