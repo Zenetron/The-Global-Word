@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { globalMockVotes } from '@/lib/mockData';
-import { getRandomNeonColor, removeAccents } from '@/lib/utils';
+import { wordToColor, removeAccents } from '@/lib/utils';
 import { COUNTRIES, normalizeCountryName } from '@/lib/countries';
 import { isForbidden } from '@/lib/blacklist';
 import { translateBatch } from '@/lib/translator';
@@ -76,8 +76,8 @@ export async function GET(req: Request) {
     if ((wordKey.length < 3 && !isException) || isForbidden(wordKey)) return;
 
     const displayWord = wordKey.charAt(0).toUpperCase() + wordKey.slice(1);
-    
-    const color = getRandomNeonColor();
+
+    const color = wordToColor(wordKey);
 
     if (!wordCounts[displayWord]) {
       wordCounts[displayWord] = { count: 0, firstSeen: v.created_at, color, distribution: {} };
@@ -160,7 +160,7 @@ export async function GET(req: Request) {
       id: v.id,
       text: translationMap[displayWord] || displayWord,
       country: v.country,
-      color: getRandomNeonColor(),
+      color: wordToColor(v.word.toLowerCase()),
       created_at: v.created_at
     };
   });

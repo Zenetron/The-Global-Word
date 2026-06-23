@@ -5,7 +5,7 @@ import crypto from 'crypto';
 import { createClient } from '@supabase/supabase-js';
 
 function hashIp(ip: string) {
-  return crypto.createHash('sha256').update(ip + process.env.IP_SALT || 'salt').digest('hex');
+  return crypto.createHash('sha256').update(ip + (process.env.IP_SALT || 'salt')).digest('hex');
 }
 
 import { isForbidden } from '@/lib/blacklist';
@@ -15,7 +15,7 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
-    const { word, clientIp, localMidnight } = await req.json();
+    const { word, clientIp } = await req.json();
 
     if (!word || word.length > 20 || isForbidden(word)) {
       return NextResponse.json({ error: 'Mot invalide ou inapproprié' }, { status: 400 });

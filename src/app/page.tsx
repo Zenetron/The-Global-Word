@@ -320,17 +320,6 @@ export default function Home() {
 
   const handleSubmission = async (word: string) => {
     try {
-      let publicIp = null;
-      try {
-        const ipRes = await fetch('https://api.ipify.org?format=json');
-        if (ipRes.ok) { const ipData = await ipRes.json(); publicIp = ipData.ip; }
-      } catch (e) {
-        try {
-          const ipRes2 = await fetch('https://ipapi.co/json/');
-          if (ipRes2.ok) { const ipData2 = await ipRes2.json(); publicIp = ipData2.ip || ipData2.query; }
-        } catch (e2) { console.warn('Could not fetch public IP', e2); }
-      }
-
       let session = null;
       if (supabase) {
         const result = await supabase.auth.getSession();
@@ -342,7 +331,7 @@ export default function Home() {
       const res = await fetch('/api/vote', {
         method: 'POST',
         headers,
-        body: JSON.stringify({ word, clientIp: publicIp }),
+        body: JSON.stringify({ word }),
       });
 
       if (res.ok) {

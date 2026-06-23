@@ -53,8 +53,7 @@ export default function SubmissionForm({ onSubmit, user, profile, onLoginGoogle,
     }
   };
 
-  const handleSendMagicLink = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSendMagicLink = async () => {
     if (!emailInput.trim()) return;
     setEmailLoading(true);
     const ok = await onLoginMagicLink(emailInput.trim());
@@ -150,18 +149,19 @@ export default function SubmissionForm({ onSubmit, user, profile, onLoginGoogle,
               animate={{ opacity: 1, y: 0 }}
               className="w-full mb-4"
             >
-              <form onSubmit={handleSendMagicLink} className="flex gap-2">
+              <div className="flex gap-2">
                 <input
                   type="email"
-                  required
                   autoFocus
                   value={emailInput}
                   onChange={(e) => setEmailInput(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleSendMagicLink(); } }}
                   placeholder="ton@email.com"
                   className="flex-1 bg-white/5 border border-white/15 focus:border-neon-cyan rounded-full px-3 py-1.5 text-[11px] text-white placeholder:text-white/25 focus:outline-none transition-colors"
                 />
                 <button
-                  type="submit"
+                  type="button"
+                  onClick={handleSendMagicLink}
                   disabled={emailLoading || !emailInput.trim()}
                   className="shrink-0 px-3 py-1.5 rounded-full bg-neon-cyan/15 hover:bg-neon-cyan/25 border border-neon-cyan/30 text-neon-cyan text-[10px] font-semibold uppercase tracking-wider transition-all disabled:opacity-40 cursor-pointer"
                 >
@@ -174,7 +174,7 @@ export default function SubmissionForm({ onSubmit, user, profile, onLoginGoogle,
                 >
                   ✕
                 </button>
-              </form>
+              </div>
             </motion.div>
           ) : (
             <div className="flex items-center gap-2 mb-4">

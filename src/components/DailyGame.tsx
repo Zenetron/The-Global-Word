@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
 import { X, Trophy, Timer, Globe2, Loader2, Target, CheckCircle2, XCircle } from 'lucide-react';
@@ -16,13 +16,17 @@ export default function DailyGame({ onClose, onGameComplete }: { onClose: () => 
   const [rounds, setRings] = useState<Round[]>([]);
   const [gameState, setGameState] = useState<'loading' | 'start' | 'playing' | 'round_result' | 'game_over' | 'already_played'>('loading');
   const [currentRoundIndex, setCurrentRoundIndex] = useState(0);
-  const [timeLeft, setTimeLeft] = useState(10000); // 10 secondes en ms
+  const [timeLeft, setTimeLeft] = useState(10000);
   const [totalScore, setTotalScore] = useState(0);
   const [totalTimeMs, setTotalTimeMs] = useState(0);
   const [roundResult, setRoundResult] = useState<'correct' | 'wrong' | 'timeout' | null>(null);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
+  const [lastRoundScore, setLastRoundScore] = useState(0);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(true);
+  const scoreRef = useRef(0);
+  const timeMsRef = useRef(0);
 
   useEffect(() => {
     const initGame = async () => {
@@ -74,25 +78,28 @@ export default function DailyGame({ onClose, onGameComplete }: { onClose: () => 
     setGameState('round_result');
     setRoundResult('timeout');
     setSelectedOption(null);
+    timeMsRef.current += 10000;
     setTotalTimeMs(prev => prev + 10000);
     setTimeout(nextRound, 2500);
   };
 
   const handleOptionClick = (option: string) => {
     if (gameState !== 'playing') return;
-    
+
     setGameState('round_result');
     setSelectedOption(option);
-    
+
     const currentRound = rounds[currentRoundIndex];
     const timeSpent = 10000 - timeLeft;
+    timeMsRef.current += timeSpent;
     setTotalTimeMs(prev => prev + timeSpent);
 
     if (option === currentRound.correctCountry) {
-      setRoundResult('correct');
-      // Score max = 1000, minimum = 100 si trouvé à la dernière seconde
       const roundScore = Math.max(100, Math.floor((timeLeft / 10000) * 1000));
+      scoreRef.current += roundScore;
       setTotalScore(prev => prev + roundScore);
+      setLastRoundScore(roundScore);
+      setRoundResult('correct');
     } else {
       setRoundResult('wrong');
     }
@@ -115,41 +122,38 @@ export default function DailyGame({ onClose, onGameComplete }: { onClose: () => 
   const endGame = async () => {
     setGameState('game_over');
     setSaving(true);
-    
-    if (totalScore > 1000) {
-      confetti({
-        particleCount: 100,
-        spread: 70,
-        origin: { y: 0.6 }
-      });
+
+    const finalScore = scoreRef.current;
+    const finalTimeMs = timeMsRef.current;
+
+    if (finalScore > 1000) {
+      confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
     }
 
     try {
       const { data: { session } } = await supabase!.auth.getSession();
       if (session) {
         setIsLoggedIn(true);
-        await fetch('/api/game/score', {
+        const res = await fetch('/api/game/score', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${session.access_token}`
           },
-          body: JSON.stringify({
-            score: totalScore,
-            timeMs: totalTimeMs
-          })
+          body: JSON.stringify({ score: finalScore, timeMs: finalTimeMs })
         });
+        if (!res.ok) setSaveError(true);
       } else {
         setIsLoggedIn(false);
-        // Sauvegarder localement pour l'envoyer après connexion
         localStorage.setItem('pending_game_score', JSON.stringify({
-          score: totalScore,
-          timeMs: totalTimeMs,
+          score: finalScore,
+          timeMs: finalTimeMs,
           date: new Date().toISOString().split('T')[0]
         }));
       }
     } catch (e) {
       console.error('Erreur sauvegarde score', e);
+      setSaveError(true);
     } finally {
       setSaving(false);
     }
@@ -271,7 +275,7 @@ export default function DailyGame({ onClose, onGameComplete }: { onClose: () => 
                     {roundResult === 'correct' && (
                       <div className="bg-green-500/20 backdrop-blur-xl border border-green-500/50 rounded-2xl p-6 flex flex-col items-center shadow-[0_0_50px_rgba(34,197,94,0.3)]">
                         <CheckCircle2 size={48} className="text-green-400 mb-2" />
-                        <span className="text-2xl font-black text-white">+ {Math.max(100, Math.floor((timeLeft / 10000) * 1000))}</span>
+                        <span className="text-2xl font-black text-white">+ {lastRoundScore}</span>
                       </div>
                     )}
                     {roundResult === 'wrong' && (
@@ -318,6 +322,9 @@ export default function DailyGame({ onClose, onGameComplete }: { onClose: () => 
               </div>
               
               <div className="flex flex-col gap-3 w-full">
+                {saveError && (
+                  <p className="text-center text-red-400 text-xs py-1">Score non sauvegardé — vérifie ta connexion.</p>
+                )}
                 {!isLoggedIn && (
                   <button
                     onClick={handleRegisterToSave}
