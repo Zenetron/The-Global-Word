@@ -6,7 +6,7 @@ import { X } from 'lucide-react';
 import { useI18n } from '@/hooks/useI18n';
 
 interface SubmissionFormProps {
-  onSubmit: (word: string) => Promise<boolean>;
+  onSubmit: (word: string) => Promise<string | null>;
   user: any;
   profile?: any;
   onLoginGoogle: () => void;
@@ -40,12 +40,12 @@ export default function SubmissionForm({ onSubmit, user, profile, onLoginGoogle,
     if (!word.trim() || word.trim().length > 20) return;
     setStatus('loading');
     try {
-      const success = await onSubmit(word.trim());
-      if (success) {
+      const error = await onSubmit(word.trim());
+      if (error === null) {
         setStatus('success');
       } else {
         setStatus('error');
-        setErrorMessage(t('alreadyVoted'));
+        setErrorMessage(error);
       }
     } catch {
       setStatus('error');

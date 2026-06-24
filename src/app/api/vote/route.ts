@@ -1,15 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase, isSupabaseConfigured } from '@/lib/supabase';
-import { globalMockVotes } from '@/lib/mockData';
 import crypto from 'crypto';
-import { createClient } from '@supabase/supabase-js';
+import { supabase, isSupabaseConfigured, createAuthedClient } from '@/lib/supabase';
+import { globalMockVotes } from '@/lib/mockData';
+import { isForbidden } from '@/lib/blacklist';
+import { COUNTRIES, normalizeCountryName } from '@/lib/countries';
 
 function hashIp(ip: string) {
   return crypto.createHash('sha256').update(ip + (process.env.IP_SALT || 'salt')).digest('hex');
 }
-
-import { isForbidden } from '@/lib/blacklist';
-import { COUNTRIES, normalizeCountryName } from '@/lib/countries';
 
 export const dynamic = 'force-dynamic';
 
@@ -143,12 +141,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Insertion avec client authentifié si connecté, sinon client anonyme
-    const insertClient = (user && token) ? createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
-      { global: { headers: { Authorization: `Bearer ${token}` } } }
-    ) : supabase!;
+    const insertClient = (user && token) ? createAuthedClient(token) : supabase!;
 
     const { error: insertError } = await insertClient
       .from('votes')

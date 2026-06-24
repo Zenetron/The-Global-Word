@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
 import { X, Trophy, Timer, Globe2, Loader2, Target, CheckCircle2, XCircle } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { useI18n } from '@/hooks/useI18n';
 
 interface Round {
   word: string;
@@ -13,7 +14,8 @@ interface Round {
 }
 
 export default function DailyGame({ onClose, onGameComplete }: { onClose: () => void, onGameComplete: () => void }) {
-  const [rounds, setRings] = useState<Round[]>([]);
+  const { t } = useI18n();
+  const [rounds, setRounds] = useState<Round[]>([]);
   const [gameState, setGameState] = useState<'loading' | 'start' | 'playing' | 'round_result' | 'game_over' | 'already_played'>('loading');
   const [currentRoundIndex, setCurrentRoundIndex] = useState(0);
   const [timeLeft, setTimeLeft] = useState(10000);
@@ -44,7 +46,7 @@ export default function DailyGame({ onClose, onGameComplete }: { onClose: () => 
         }
 
         if (data.rounds) {
-          setRings(data.rounds);
+          setRounds(data.rounds);
           setGameState('start');
         } else {
           console.error(data.error);
@@ -160,12 +162,11 @@ export default function DailyGame({ onClose, onGameComplete }: { onClose: () => 
   };
 
   const handleShare = () => {
-    const text = `J'ai marqué ${totalScore} pts au Défi du Jour sur The Global Word ! 🌍 Joue toi aussi !`;
+    const text = t('gameShareScore').replace('%score%', String(totalScore));
     if (navigator.share) {
       navigator.share({ title: 'The Global Word', text, url: window.location.href }).catch(() => {});
     } else {
-      navigator.clipboard.writeText(text + " " + window.location.href);
-      alert('Score copié dans le presse-papiers !');
+      navigator.clipboard.writeText(`${text} ${window.location.href}`);
     }
   };
 

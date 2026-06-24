@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase, isSupabaseConfigured } from '@/lib/supabase';
-import { createClient } from '@supabase/supabase-js';
+import { supabase, isSupabaseConfigured, createAuthedClient } from '@/lib/supabase';
 import { getLocalMidnightAndDate } from '@/lib/ipUtils';
 
 export const dynamic = 'force-dynamic';
@@ -25,11 +24,7 @@ export async function POST(req: NextRequest) {
     const { data: { user }, error: authError } = await supabase!.auth.getUser(token);
     if (authError || !user) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
 
-    const client = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
-      { global: { headers: { Authorization: `Bearer ${token}` } } }
-    );
+    const client = createAuthedClient(token);
 
     const { localDateStr } = await getLocalMidnightAndDate(req);
 

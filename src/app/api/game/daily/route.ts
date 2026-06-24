@@ -14,6 +14,33 @@ function shuffle<T>(array: T[]): T[] {
   return newArray;
 }
 
+function dateSeed(dateStr: string): number {
+  let hash = 0;
+  for (let i = 0; i < dateStr.length; i++) {
+    hash = ((hash << 5) - hash) + dateStr.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash);
+}
+
+function seededRandom(seed: number) {
+  let s = seed;
+  return () => {
+    s = (s * 1664525 + 1013904223) & 0xffffffff;
+    return (s >>> 0) / 0x100000000;
+  };
+}
+
+function deterministicShuffle<T>(array: T[], seed: number): T[] {
+  const arr = [...array];
+  const rand = seededRandom(seed);
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
 export async function GET(req: NextRequest) {
   try {
     if (!isSupabaseConfigured()) {
@@ -52,13 +79,9 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // On cherche les mots de la veille
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yStr = yesterday.toISOString().split('T')[0];
-    
-    // Pour éviter de renvoyer un tableau vide si hier il n'y a pas eu de votes,
-    // on prend simplement les 50 derniers votes et on tire au hasard.
+    const todayUTC = new Date().toISOString().split('T')[0];
+    const seed = dateSeed(todayUTC);
+
     const { data: recentVotes, error } = await supabase!
       .from('votes')
       .select('word, country')
@@ -85,21 +108,14 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Pas assez de mots uniques pour jouer' }, { status: 400 });
     }
 
-    // Tirer 3 mots au hasard
-    const selected = shuffle(uniqueVotes).slice(0, 3);
+    const selected = deterministicShuffle(uniqueVotes, seed).slice(0, 3);
 
-    const rounds = selected.map((item) => {
+    const rounds = selected.map((item, i) => {
       const correct = item.country;
-      // Choisir 2 faux pays
       const otherCountries = COUNTRIES.map(c => c.nameEn).filter(c => c !== correct);
       const shuffledOthers = shuffle(otherCountries);
-      const options = shuffle([correct, shuffledOthers[0], shuffledOthers[1]]);
-      
-      return {
-        word: item.word,
-        correctCountry: correct,
-        options
-      };
+      const options = deterministicShuffle([correct, shuffledOthers[0], shuffledOthers[1]], seed + i);
+      return { word: item.word, correctCountry: correct, options };
     });
 
     return NextResponse.json({ rounds });

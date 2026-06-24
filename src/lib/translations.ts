@@ -45,6 +45,7 @@ export const translations = {
     connectedAs: "Connecté en tant que %username%",
     logout: "Se déconnecter",
     loginRequired: "Connexion Google requise pour voter.",
+    gameShareScore: "J'ai marqué %score% pts au Défi du Jour sur The Global Word ! 🌍 Joue toi aussi !",
   },
   en: {
 
@@ -90,5 +91,6 @@ export const translations = {
     connectedAs: "Connected as %username%",
     logout: "Logout",
     loginRequired: "Google login required to vote.",
+    gameShareScore: "I scored %score% pts in The Global Word Daily Challenge! 🌍 Play too!",
   }
 };

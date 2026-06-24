@@ -78,18 +78,9 @@ function GlobeInstance({ data, ringsData, onWordClick, isMobile }: GlobeInstance
       object={globe} 
       onClick={(e: any) => {
         e.stopPropagation();
-        console.log('Clicked on object:', e.object);
-
         const data = e.object?.__data || e.object?.parent?.__data || e.object?.userData;
-        console.log('Object data:', data);
-
-        if (data && data.text) {
-          if (onWordClick) {
-            onWordClick(data.text, data.country || 'Pays inconnu', data.lat, data.lng);
-          }
-        } else if (data && data.country) {
-
-            console.log('Country clicked:', data.country);
+        if (data && data.text && onWordClick) {
+          onWordClick(data.text, data.country || 'Pays inconnu', data.lat, data.lng);
         }
       }}
     />
