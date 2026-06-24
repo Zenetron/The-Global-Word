@@ -156,9 +156,9 @@ export default function Home() {
         if (data.wordDistributions) setWordDistributions(data.wordDistributions);
       });
     } catch (e) {
-      console.error(t('error'), e);
+      console.error(e);
     }
-  }, [locale, t, startTransition]);
+  }, [locale]);
 
   useEffect(() => {
     const initTimer = setTimeout(() => { fetchStats(); }, 500);
